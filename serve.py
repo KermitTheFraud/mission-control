@@ -3,7 +3,7 @@
 mission-control - local, read-only project dashboard.
 
 Serves index.html plus a merged JSON feed at /api/projects:
-    static registry (projects.json)  +  live git status (../.tools/repo_check.py --json)
+    static registry (projects.json)  +  live git status (.tools/repo_check.py --json)
 
 Run:   python serve.py        (Windows)
        python3 serve.py       (macOS / Linux / Omarchy)
@@ -24,7 +24,8 @@ from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 HERE = Path(__file__).resolve().parent
-REPO_CHECK = HERE.parent / ".tools" / "repo_check.py"
+REPO_CHECK = HERE / ".tools" / "repo_check.py"
+SCAN_ROOT = HERE.parent  # mission-control lives inside the projects root
 REGISTRY = HERE / "projects.json"
 INDEX = HERE / "index.html"
 
@@ -41,7 +42,7 @@ def run_repo_check(fetch: bool) -> tuple[list[dict], str]:
     """Return (live_results, error_message). Empty error means success."""
     if not REPO_CHECK.exists():
         return [], f"repo_check.py not found at {REPO_CHECK}"
-    cmd = [sys.executable, str(REPO_CHECK), "--json"]
+    cmd = [sys.executable, str(REPO_CHECK), "--json", "--root", str(SCAN_ROOT)]
     if not fetch:
         cmd.append("--no-fetch")
     try:

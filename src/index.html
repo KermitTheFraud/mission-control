@@ -174,6 +174,7 @@
   .item:first-child { border-top: none; }
   .row { display: grid; grid-template-columns: 11px 26px minmax(0,1fr) 150px 100px 20px; align-items: center; gap: 14px; padding: 12px 18px; cursor: pointer; position: relative; transition: background .12s; }
   .row:hover { background: var(--panel-2); }
+  .row.rowdrag { opacity: .55; }
   .row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--sc); opacity: .85; }
   .led { width: 9px; height: 9px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 9px var(--sc); }
   .item.sync .led { animation: pulse 2.2s ease-in-out infinite; }
@@ -398,7 +399,7 @@ function termFinish(log, summary, isErr) {
   })();
 }
 function termHide() { term.classList.remove("show"); }
-term.addEventListener("click", e => { if (e.target === term) termHide(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") termHide(); });
 
 /* ---------------- connection state ---------------- */
 function setConn(state) { CONN = state; $("server").className = "server " + state; }
@@ -433,6 +434,8 @@ async function control(action) {
   try { await fetch("/api/" + action, { method: "POST" }); } catch (e) {}
   setConn(action === "shutdown" ? "offline" : "connecting");
   renderServer();
+  // after a restart, poll quickly so the current tab reconnects in place
+  if (action === "restart") { for (let i = 1; i <= 12; i++) setTimeout(pollStatus, i * 700); }
 }
 function renderSyncBanner() {
   const repo = (STATUS && STATUS.repo) || {};
@@ -635,7 +638,7 @@ function renderRows() {
   rowsEl.innerHTML = rows.length ? rows.map(p => {
     const m = gitMeta(p), grp = gitGroup(p), on = !!TODOS[p.name];
     return `<div class="item ${grp === "synced" ? "sync" : ""}" style="--sc:${m.c}">
-      <div class="row" data-name="${esc(p.name)}">
+      <div class="row" draggable="true" data-name="${esc(p.name)}">
         <span class="led"></span>
         <button class="star ${on ? "on" : ""}" data-name="${esc(p.name)}" title="${on ? "On the board" : "Add to TODO board"}">${on ? "★" : "☆"}</button>
         <div class="name-cell">
@@ -644,7 +647,7 @@ function renderRows() {
         </div>
         <span class="gitbadge"><span class="g">${m.g}</span>${esc(badgeText(p))}</span>
         <span class="handover" data-h="${esc(p.handover)}">${HANDOVER[p.handover] || ""}</span>
-        ${p.url ? `<a class="openlink" href="${esc(p.url)}" target="_blank" rel="noopener" title="Open live site">↗</a>` : `<span class="openlink dis" title="No live URL">↗</span>`}
+        ${p.url ? `<a class="openlink" draggable="false" href="${esc(p.url)}" target="_blank" rel="noopener" title="Open live site">↗</a>` : `<span class="openlink dis" title="No live URL">↗</span>`}
       </div>
       ${detailHTML(p)}
     </div>`;
@@ -667,6 +670,16 @@ rowsEl.addEventListener("click", e => {
   if (e.target.closest(".openlink")) return;
   const row = e.target.closest(".row");
   if (row) row.parentElement.classList.toggle("open");
+});
+rowsEl.addEventListener("dragstart", e => {
+  const row = e.target.closest(".row");
+  if (row) { DRAG = row.dataset.name; row.classList.add("rowdrag"); e.dataTransfer.effectAllowed = "copyMove"; }
+});
+rowsEl.addEventListener("dragend", e => {
+  const row = e.target.closest(".row");
+  if (row) row.classList.remove("rowdrag");
+  DRAG = null;
+  document.querySelectorAll(".lane-body").forEach(b => b.classList.remove("dragover"));
 });
 $("filters").addEventListener("click", e => {
   const btn = e.target.closest("button");

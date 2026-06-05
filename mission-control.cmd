@@ -1,6 +1,17 @@
-:; exec python3 "$(dirname "$0")/src/serve.py" "$@"
+:<<"___BAT___"
 @echo off
-REM mission-control launcher - one file, runs on Windows (cmd) and Unix (sh).
-REM   Windows: double-click or run `mission-control` here.
-REM   macOS / Linux / Omarchy: `./mission-control.cmd`  (or `sh mission-control.cmd`)
-python "%~dp0src\serve.py" %*
+REM ===== Windows: start the server detached (windowless), then self-close =====
+start "" pythonw "%~dp0src\serve.py" --detached
+echo mission-control is running at http://127.0.0.1:8787
+echo It runs in the background - stop it from the dashboard's Kill button.
+echo Logs: server.log
+echo.
+echo Closing this window in 3 seconds...
+timeout /t 3 /nobreak >nul
+exit /b
+___BAT___
+# ===== macOS / Linux / Omarchy: start detached, log to server.log, return =====
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+nohup python3 "$ROOT/src/serve.py" --detached >/dev/null 2>&1 &
+echo "mission-control is running at http://127.0.0.1:8787 (logs: server.log)"
+exit 0

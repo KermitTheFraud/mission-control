@@ -12,7 +12,11 @@ Serves index.html plus a small JSON API:
     POST /api/restart              re-exec the server (e.g. after a code pull)
 
 Run:   python src/serve.py   /   python3 src/serve.py
-Or just the launcher in the repo root:  mission-control.cmd
+Or the launcher in the repo root:  mission-control.cmd  (starts it detached)
+
+Flags:
+    --no-open    don't open a browser (used by Restart so it reuses your tab)
+    --detached   redirect output to server.log (used when launched windowless)
 
 Running the launcher when a server is already up just opens the browser - it
 never starts a second one. On a fresh start it git-pulls the mission-control
@@ -43,11 +47,34 @@ REPO_CHECK = HERE / "repo_check.py"
 INDEX = HERE / "index.html"
 REGISTRY = ROOT / "data" / "projects.json"
 TODOS = ROOT / "data" / "todos.json"
+LOGFILE = ROOT / "server.log"
 
 HOST = "127.0.0.1"
 PORT = 8787
 START_TS = time.time()
 START_ISO = datetime.now().isoformat(timespec="seconds")
+DETACHED = False
+
+
+def log(msg: str) -> None:
+    try:
+        print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}", flush=True)
+    except Exception:
+        pass
+
+
+def setup_output(detached: bool) -> None:
+    """When detached (or windowless via pythonw, where the std streams are None),
+    send all output to server.log for debugging and an audit trail."""
+    global DETACHED
+    DETACHED = detached
+    if detached or sys.stdout is None or sys.stderr is None:
+        try:
+            f = open(LOGFILE, "a", encoding="utf-8", buffering=1)
+            sys.stdout = f
+            sys.stderr = f
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------- git helpers
@@ -154,17 +181,17 @@ def run_repo_check(fetch: bool) -> tuple[list, str, list]:
         return [], "repo_check.py timed out", [wrapper]
     except OSError as e:
         return [], f"could not run repo_check.py: {e}", [wrapper]
-    log = [wrapper] + [ln for ln in (proc.stderr or "").splitlines() if ln.strip()]
+    log_lines = [wrapper] + [ln for ln in (proc.stderr or "").splitlines() if ln.strip()]
     try:
-        return json.loads(proc.stdout), "", log
+        return json.loads(proc.stdout), "", log_lines
     except json.JSONDecodeError:
         tail = (proc.stderr or proc.stdout or "no output").strip().splitlines()
-        return [], "repo_check.py did not return JSON: " + (tail[-1] if tail else "?"), log
+        return [], "repo_check.py did not return JSON: " + (tail[-1] if tail else "?"), log_lines
 
 
 def build_payload(fetch: bool) -> dict:
     registry, reg_error = load_registry()
-    live, live_error, log = run_repo_check(fetch)
+    live, live_error, log_lines = run_repo_check(fetch)
     live_by_name = {r.get("name"): r for r in live}
 
     projects, seen = [], set()
@@ -184,7 +211,7 @@ def build_payload(fetch: bool) -> dict:
         "projects": projects,
         "scanned_at": datetime.now().isoformat(timespec="seconds"),
         "fetched": fetch,
-        "log": log,
+        "log": log_lines,
         "error": "; ".join(e for e in (reg_error, live_error) if e),
     }
 
@@ -258,15 +285,21 @@ class Handler(BaseHTTPRequestHandler):
 
     def _delayed_shutdown(self) -> None:
         time.sleep(0.3)
+        log("shutdown requested")
         self.server.shutdown()
 
     def _delayed_restart(self) -> None:
         time.sleep(0.3)
+        log("restart requested")
         # execv replaces the process; the listening socket is close-on-exec, so
-        # the new process can rebind the port.
-        os.execv(sys.executable, [sys.executable, str(SELF)])
+        # the new one can rebind. --no-open reuses the browser tab you already
+        # have; keep --detached so a windowless instance stays windowless.
+        args = [sys.executable, str(SELF), "--no-open"]
+        if DETACHED:
+            args.append("--detached")
+        os.execv(sys.executable, args)
 
-    def log_message(self, *args) -> None:  # keep the console quiet
+    def log_message(self, *args) -> None:  # keep access logging quiet
         pass
 
 
@@ -284,14 +317,19 @@ def probe_existing() -> str:
 
 def main() -> int:
     global PORT
+    argv = sys.argv[1:]
+    no_open = "--no-open" in argv
+    setup_output("--detached" in argv)
 
     existing = probe_existing()
     if existing:
-        print(f"mission-control: already running -> {existing} (opening browser)")
-        webbrowser.open(existing)
+        log(f"already running -> {existing} (opening browser)" if not no_open
+            else f"already running -> {existing}")
+        if not no_open:
+            webbrowser.open(existing)
         return 0
 
-    print("mission-control:", pull_if_clean())
+    log(f"startup: {pull_if_clean()}")
 
     httpd = None
     for _ in range(15):
@@ -301,16 +339,19 @@ def main() -> int:
         except OSError:
             PORT += 1
     if httpd is None:
-        print("mission-control: could not bind a free port", file=sys.stderr)
+        log("ERROR: could not bind a free port")
         return 1
 
     url = f"http://{HOST}:{PORT}/"
-    print(f"mission-control -> {url}   (pid {os.getpid()}, Ctrl-C to stop)")
-    threading.Timer(0.6, lambda: webbrowser.open(url)).start()
+    log(f"serving {url} (pid {os.getpid()})")
+    if not no_open:
+        threading.Timer(0.6, lambda: webbrowser.open(url)).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
-        print("\nmission-control: stopped")
+        log("stopped (Ctrl-C)")
+    except Exception as e:
+        log(f"ERROR: {e}")
     finally:
         httpd.server_close()
     return 0

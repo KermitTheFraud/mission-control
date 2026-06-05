@@ -17,7 +17,7 @@
   "farmfood-ai.dk": {
     "lane": "next",
     "rank": 1,
-    "notes": "BC adgang"
+    "notes": "BC adgang "
   },
   "kmrustfri": {
     "lane": "next",
@@ -27,6 +27,6 @@
   "targarno-ai.dk": {
     "lane": "next",
     "rank": 3,
-    "notes": "AI svar feedback"
+    "notes": "AI svar feedback til Joachim"
   }
 }

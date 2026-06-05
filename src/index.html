@@ -85,29 +85,32 @@
   .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 40px 32px 80px; }
 
   /* ---------- Masthead ---------- */
-  .masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: 28px; flex-wrap: wrap; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+  .masthead { padding-bottom: 20px; border-bottom: 1px solid var(--line); }
   h1 { font-family: "Archivo", sans-serif; font-weight: 900; font-size: clamp(40px, 7vw, 74px); letter-spacing: -0.025em; line-height: 0.9; }
   h1 .slash { color: var(--accent); }
-  .subtitle { margin-top: 13px; font-size: 12px; color: var(--faint); line-height: 1.7; }
-  .subtitle .n { color: var(--muted); }
 
-  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 11px; }
-  .theme-toggle { background: var(--panel); border: 1px solid var(--line); color: var(--muted); border-radius: 9px; width: 36px; height: 31px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+  /* info strip under the title: 3 sections, 2 lines each, always horizontal */
+  .strip { display: flex; align-items: flex-start; gap: 24px; margin-top: 14px; }
+  .strip .sect { display: flex; flex-direction: column; gap: 5px; min-width: 0; font-size: 12px; }
+  .strip .l1, .strip .l2 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sect-left { color: var(--muted); flex-shrink: 1; }
+  .sect-left .l2 { color: var(--faint); }
+  .sect-mid { color: var(--faint); flex: 1 1 auto; }
+  .sect-mid .n { color: var(--muted); }
+  .sect-right { align-items: flex-end; flex-shrink: 0; text-align: right; }
+  .ctrls-line { display: flex; align-items: center; gap: 7px; }
+  .status-line { display: flex; align-items: center; gap: 7px; color: var(--faint); font-size: 11px; }
+  .status-line .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dormant); flex-shrink: 0; }
+  .sect-right.online  .dot { background: var(--live);  box-shadow: 0 0 8px var(--live); animation: pulse 2.2s ease-in-out infinite; }
+  .sect-right.offline .dot { background: var(--down);  box-shadow: 0 0 8px var(--down); }
+  .sect-right.connecting .dot, .sect-right.file .dot { background: var(--watch); box-shadow: 0 0 8px var(--watch); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 9px var(--live); } 50% { box-shadow: 0 0 2px var(--live); } }
+
+  .theme-toggle { background: var(--panel); border: 1px solid var(--line); color: var(--muted); border-radius: 8px; width: 32px; height: 28px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
   .theme-toggle:hover { color: var(--fg); border-color: var(--faint); }
-  .theme-toggle svg { width: 16px; height: 16px; }
+  .theme-toggle svg { width: 15px; height: 15px; }
   .ic-moon { display: none; } .ic-sun { display: inline-flex; }
   html[data-theme="light"] .ic-sun { display: none; } html[data-theme="light"] .ic-moon { display: inline-flex; }
-
-  /* server chip */
-  .server { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
-  .server .line { display: flex; align-items: center; gap: 9px; font-size: 11.5px; color: var(--muted); }
-  .server .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dormant); }
-  .server.online  .dot { background: var(--live); box-shadow: 0 0 9px var(--live); animation: pulse 2.2s ease-in-out infinite; }
-  .server.offline .dot { background: var(--down); box-shadow: 0 0 9px var(--down); }
-  .server.connecting .dot, .server.file .dot { background: var(--watch); box-shadow: 0 0 9px var(--watch); }
-  @keyframes pulse { 0%,100% { box-shadow: 0 0 9px var(--live); } 50% { box-shadow: 0 0 2px var(--live); } }
-  .server .meta { color: var(--faint); font-size: 11px; text-align: right; }
-  .server .ctrls { display: flex; gap: 7px; }
   .btn { background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-family: inherit; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 11px; border-radius: 7px; cursor: pointer; transition: all .15s; }
   .btn:hover { color: var(--fg); border-color: var(--faint); }
   .btn.danger:hover { color: var(--down); border-color: color-mix(in srgb, var(--down) 45%, transparent); }
@@ -137,10 +140,10 @@
   .tcard.dragging { opacity: .35; }
   .tcard-head { display: flex; align-items: center; gap: 9px; padding: 9px 11px; cursor: grab; }
   .tcard-head:active { cursor: grabbing; }
-  .tnum { width: 18px; height: 18px; flex-shrink: 0; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); color: var(--lc); font-size: 10.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  .tnum { width: 20px; height: 20px; flex-shrink: 0; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); color: var(--lc); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
   .ttitle { flex: 1; min-width: 0; font-family: "Archivo", sans-serif; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .tstat { font-size: 11px; flex-shrink: 0; }
-  .tremove { background: none; border: none; color: var(--faint); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+  .tstat { font-size: 13px; flex-shrink: 0; }
+  .tremove { background: none; border: none; color: var(--faint); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
   .tremove:hover { color: var(--down); }
   .tnotes { width: 100%; background: transparent; border: none; border-top: 1px solid var(--line); color: var(--fg); font-family: inherit; font-size: 12px; line-height: 1.45; padding: 8px 11px; resize: vertical; min-height: 36px; outline: none; }
   .tnotes::placeholder { color: var(--faint); }
@@ -176,18 +179,18 @@
   .row:hover { background: var(--panel-2); }
   .row.rowdrag { opacity: .55; }
   .row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--sc); opacity: .85; }
-  .led { width: 9px; height: 9px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 9px var(--sc); }
+  .led { width: 10px; height: 10px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 9px var(--sc); }
   .item.sync .led { animation: pulse 2.2s ease-in-out infinite; }
 
-  .star { background: none; border: none; cursor: pointer; font-size: 15px; line-height: 1; color: var(--faint); padding: 0; justify-self: center; }
+  .star { background: none; border: none; cursor: pointer; font-size: 17px; line-height: 1; color: var(--faint); padding: 0; justify-self: center; }
   .star.on { color: var(--watch); }
   .star:hover { color: var(--watch); }
 
   .name-cell { min-width: 0; display: flex; align-items: baseline; gap: 11px; }
   .name-cell .nm { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 15px; white-space: nowrap; }
   .name-cell .sm { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-  .gitbadge { font-size: 11px; letter-spacing: 0.03em; color: var(--sc); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-  .gitbadge .g { font-size: 12px; }
+  .gitbadge { font-size: 13px; letter-spacing: 0.03em; color: var(--sc); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .gitbadge .g { font-size: 14px; }
   .handover { justify-self: start; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
   .handover[data-h="known"]    { color: var(--live);  border-color: color-mix(in srgb, var(--live) 38%, transparent); }
   .handover[data-h="review"]   { color: var(--watch); border-color: color-mix(in srgb, var(--watch) 38%, transparent); }
@@ -238,6 +241,9 @@
   .term-body .cursor { color: #45d98a; animation: blink 1s steps(1) infinite; }
   @keyframes blink { 50% { opacity: 0; } }
 
+  @media (max-width: 980px) { .os-detail { display: none; } }
+  @media (max-width: 860px) { .mid-detail { display: none; } }
+  @media (max-width: 680px) { .online-word { display: none; } }
   @media (max-width: 820px) { .board { grid-template-columns: 1fr; } }
   @media (max-width: 720px) {
     .wrap { padding: 28px 16px 60px; }
@@ -252,22 +258,25 @@
 <div class="wrap">
 
   <header class="masthead">
-    <div class="title-block">
-      <h1>MISSION<span class="slash">/</span>CONTROL</h1>
-      <div class="subtitle">
-        <span class="n" id="count">0</span> projects · live git via repo_check.py<br>
-        registry + board in data/
+    <h1>MISSION<span class="slash">/</span>CONTROL</h1>
+    <div class="strip">
+      <div class="sect sect-left">
+        <div class="l1" id="git-email">—</div>
+        <div class="l2"><span id="os-name">—</span><span class="os-detail" id="os-detail"></span></div>
       </div>
-    </div>
-    <div class="right">
-      <button class="theme-toggle" id="theme-toggle" title="Toggle light / dark" aria-label="Toggle theme">
-        <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
-        <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
-      </button>
-      <div class="server connecting" id="server">
-        <div class="line"><span class="dot"></span><span id="server-state">connecting…</span></div>
-        <div class="meta" id="server-meta"></div>
-        <div class="ctrls" id="server-ctrls"></div>
+      <div class="sect sect-mid">
+        <div class="l1"><span class="n" id="count">0</span> projects · live git<span class="mid-detail"> via repo_check.py</span></div>
+        <div class="l2">registry + board in data/</div>
+      </div>
+      <div class="sect sect-right connecting" id="sect-right">
+        <div class="l1 ctrls-line">
+          <button class="theme-toggle" id="theme-toggle" title="Toggle light / dark" aria-label="Toggle theme">
+            <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+            <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </button>
+          <span id="server-ctrls"></span>
+        </div>
+        <div class="l2 status-line"><span class="dot"></span><span id="server-status">connecting…</span></div>
       </div>
     </div>
   </header>
@@ -310,7 +319,7 @@
 
 <div class="term-overlay" id="term">
   <div class="term">
-    <div class="term-bar"><span class="td r"></span><span class="td y"></span><span class="td g"></span><span class="term-title">repo_check — live scan</span></div>
+    <div class="term-bar"><span class="term-title">repo_check — live scan</span></div>
     <div class="term-body" id="term-body"></div>
   </div>
 </div>
@@ -402,27 +411,33 @@ function termHide() { term.classList.remove("show"); }
 document.addEventListener("keydown", e => { if (e.key === "Escape") termHide(); });
 
 /* ---------------- connection state ---------------- */
-function setConn(state) { CONN = state; $("server").className = "server " + state; }
+function setConn(state) { CONN = state; const r = $("sect-right"); if (r) r.className = "sect sect-right " + state; }
 
 function renderServer() {
-  const st = $("server-state"), meta = $("server-meta"), ctrls = $("server-ctrls");
-  if (CONN === "file") {
-    st.textContent = "open via the server";
-    meta.innerHTML = `run <b>mission-control.cmd</b> → http://127.0.0.1:8787`;
-    ctrls.innerHTML = ""; return;
-  }
-  if (CONN === "offline") {
-    st.textContent = "server offline";
-    meta.innerHTML = `start it: <b>mission-control.cmd</b>`;
-    ctrls.innerHTML = ""; return;
-  }
-  if (CONN === "connecting") { st.textContent = "connecting…"; meta.textContent = ""; ctrls.innerHTML = ""; return; }
   const s = STATUS || {};
-  st.textContent = "online";
-  meta.textContent = `pid ${s.pid} · :${s.port} · up ${fmtUptime(s.uptime_seconds)}`;
-  ctrls.innerHTML = `<button class="btn" id="btn-restart">Restart</button><button class="btn danger" id="btn-kill">Kill</button>`;
-  $("btn-restart").onclick = () => control("restart");
-  $("btn-kill").onclick = () => control("shutdown");
+  // left section: git identity + OS (keep last known if a poll is mid-flight)
+  if (s.git_email) $("git-email").textContent = s.git_email;
+  if (s.os) {
+    $("os-name").textContent = s.os.name || "";
+    $("os-detail").textContent = s.os.detail ? " · " + s.os.detail : "";
+  }
+  // right section: controls (line 1) + status (line 2)
+  const ctrls = $("server-ctrls"), status = $("server-status");
+  if (CONN === "online") {
+    ctrls.innerHTML = `<button class="btn" id="btn-restart">Restart</button><button class="btn danger" id="btn-kill">Kill</button>`;
+    $("btn-restart").onclick = () => control("restart");
+    $("btn-kill").onclick = () => control("shutdown");
+    status.innerHTML = `<span class="online-word">online · </span>pid ${s.pid} · :${s.port} · up ${fmtUptime(s.uptime_seconds)}`;
+  } else if (CONN === "offline") {
+    ctrls.innerHTML = "";
+    status.innerHTML = `offline — run <b>mission-control.cmd</b>`;
+  } else if (CONN === "file") {
+    ctrls.innerHTML = "";
+    status.innerHTML = `open via <b>mission-control.cmd</b> → :8787`;
+  } else {
+    ctrls.innerHTML = "";
+    status.textContent = "connecting…";
+  }
 }
 function fmtUptime(s) {
   s = s || 0;

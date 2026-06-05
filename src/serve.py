@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import json
 import os
+import platform
+import shutil
 import subprocess
 import sys
 import threading
@@ -216,11 +218,63 @@ def build_payload(fetch: bool) -> dict:
     }
 
 
+_OS_CACHE = None
+
+
+def detect_os() -> dict:
+    """Short OS name + exact version, for the three machines this runs on
+    (Windows / macOS / Omarchy). Cached - the OS doesn't change at runtime."""
+    global _OS_CACHE
+    if _OS_CACHE is not None:
+        return _OS_CACHE
+
+    sysname = platform.system()
+    if sysname == "Windows":
+        release, version, *_ = platform.win32_ver()
+        info = {"name": f"Windows {release}".strip(), "detail": version}
+    elif sysname == "Darwin":
+        info = {"name": "macOS", "detail": platform.mac_ver()[0]}
+    elif sysname == "Linux":
+        info = None
+        omarchy = shutil.which("omarchy")
+        if omarchy:
+            try:
+                p = subprocess.run([omarchy, "--version"], capture_output=True,
+                                   text=True, timeout=5)
+                v = (p.stdout or p.stderr).strip()
+                if v:
+                    info = {"name": "Omarchy", "detail": v.split()[-1]}
+            except (OSError, subprocess.SubprocessError):
+                pass
+        if info is None:
+            try:
+                for line in Path("/etc/os-release").read_text(encoding="utf-8").splitlines():
+                    if line.startswith("PRETTY_NAME="):
+                        info = {"name": line.split("=", 1)[1].strip().strip('"'), "detail": ""}
+                        break
+            except OSError:
+                pass
+        if info is None:
+            info = {"name": "Linux", "detail": platform.release()}
+    else:
+        info = {"name": sysname, "detail": platform.release()}
+
+    _OS_CACHE = info
+    return info
+
+
+def git_email() -> str:
+    code, out, _ = git_root("config", "user.email")
+    return out if code == 0 else ""
+
+
 def status_payload() -> dict:
     return {
         "app": "mission-control",
         "pid": os.getpid(), "host": HOST, "port": PORT,
         "started_at": START_ISO, "uptime_seconds": int(time.time() - START_TS),
+        "git_email": git_email(),
+        "os": detect_os(),
         "repo": repo_state(),
     }
 

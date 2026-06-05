@@ -8,5 +8,25 @@
     "lane": "later",
     "rank": 0,
     "notes": "drag n drop from table, not just press star. The terminal scan should not be able to be clicked away. Where are notes saved? When I press restart it loads a new dashboard, instead of just refreshing the current tab?"
+  },
+  "trusted": {
+    "notes": "HubSpot API test, ordre data analyse og send til Michael",
+    "lane": "next",
+    "rank": 0
+  },
+  "farmfood-ai.dk": {
+    "lane": "next",
+    "rank": 1,
+    "notes": "BC adgang"
+  },
+  "kmrustfri": {
+    "lane": "next",
+    "rank": 2,
+    "notes": "VPS server setup"
+  },
+  "targarno-ai.dk": {
+    "lane": "next",
+    "rank": 3,
+    "notes": "AI svar feedback"
   }
 }

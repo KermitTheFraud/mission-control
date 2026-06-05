@@ -14,9 +14,10 @@ expects under each project's "git" key:
 status is one of: IN SYNC, PUSH, PULL, DIVERGED, DIRTY, NO UPSTREAM, ERROR.
 
 Usage:
-    repo_check.py --json [--no-fetch] [--root PATH]
+    repo_check.py --json [--no-fetch] [--log] [--root PATH]
 
-Exit code 1 means "some repos need attention" - not a failure.
+--log prints the git commands run to stderr (mission-control shows them in
+its loading terminal). Exit code 1 means "some repos need attention".
 No third-party dependencies. Needs Python 3.8+ and git on PATH.
 """
 from __future__ import annotations
@@ -30,10 +31,12 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 GIT_TIMEOUT = 30  # seconds per git command (fetch can be slow)
+LOG: list[str] = []  # git commands run this session (emitted to stderr with --log)
 
 
 def git(repo: Path, *args: str, timeout: int = GIT_TIMEOUT) -> tuple[int, str]:
     """Run a git command in repo. Returns (exit_code, stdout)."""
+    LOG.append("git -C " + repo.name + " " + " ".join(args))
     try:
         proc = subprocess.run(
             ["git", "-C", str(repo), *args],
@@ -131,6 +134,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true", help="emit JSON (the only mode)")
     ap.add_argument("--no-fetch", action="store_true", help="skip git fetch (faster, offline)")
+    ap.add_argument("--log", action="store_true", help="print the git commands run to stderr")
     ap.add_argument("--root", type=Path, default=DEFAULT_ROOT,
                     help=f"projects root to scan (default: {DEFAULT_ROOT})")
     args = ap.parse_args()
@@ -142,6 +146,8 @@ def main() -> int:
     )
     results = [check_repo(d, fetch=not args.no_fetch) for d in repos]
 
+    if args.log:
+        print("\n".join(LOG), file=sys.stderr)
     print(json.dumps(results, indent=None if args.json else 2))
     return 1 if any(r["status"] != "IN SYNC" for r in results) else 0
 

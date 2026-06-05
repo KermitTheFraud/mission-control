@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mission Control</title>
+<script>try { if (localStorage.getItem("mc-theme") === "light") document.documentElement.setAttribute("data-theme", "light"); } catch (e) {}</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -25,6 +26,27 @@
     --now: #f5b53d;
     --next: #6cc8ff;
     --later: #717885;
+    --grain: 0.025;
+  }
+  /* Monokai Pro Light (Sun filter) */
+  html[data-theme="light"] {
+    --bg: #f8efe7;
+    --panel: #fffaf4;
+    --panel-2: #f1e7db;
+    --line: #e4d8ca;
+    --fg: #2c232e;
+    --muted: #72696d;
+    --faint: #a59c9c;
+    --accent: #2473b6;
+    --live: #218871;
+    --watch: #b16803;
+    --down: #ce4770;
+    --magenta: #6851a2;
+    --dormant: #a59c9c;
+    --now: #b16803;
+    --next: #2473b6;
+    --later: #a59c9c;
+    --grain: 0.04;
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -38,14 +60,15 @@
     -webkit-font-smoothing: antialiased;
     position: relative;
     overflow-x: hidden;
+    transition: background .25s, color .25s;
   }
 
   body::before {
     content: "";
     position: fixed; inset: 0;
     background:
-      radial-gradient(900px 500px at 12% -8%, rgba(108,200,255,0.10), transparent 60%),
-      radial-gradient(700px 600px at 110% 0%, rgba(69,217,138,0.05), transparent 55%),
+      radial-gradient(900px 500px at 12% -8%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+      radial-gradient(700px 600px at 110% 0%, color-mix(in srgb, var(--live) 6%, transparent), transparent 55%),
       linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 56px,
       linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 56px 100%;
     opacity: 0.5; pointer-events: none;
@@ -56,7 +79,7 @@
     content: "";
     position: fixed; inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
-    opacity: 0.025; pointer-events: none; z-index: 0;
+    opacity: var(--grain); pointer-events: none; z-index: 0;
   }
 
   .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 40px 32px 80px; }
@@ -65,24 +88,33 @@
   .masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: 28px; flex-wrap: wrap; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
   h1 { font-family: "Archivo", sans-serif; font-weight: 900; font-size: clamp(40px, 7vw, 74px); letter-spacing: -0.025em; line-height: 0.9; }
   h1 .slash { color: var(--accent); }
+  .subtitle { margin-top: 13px; font-size: 12px; color: var(--faint); line-height: 1.7; }
+  .subtitle .n { color: var(--muted); }
+
+  .right { display: flex; flex-direction: column; align-items: flex-end; gap: 11px; }
+  .theme-toggle { background: var(--panel); border: 1px solid var(--line); color: var(--muted); border-radius: 9px; width: 36px; height: 31px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all .15s; }
+  .theme-toggle:hover { color: var(--fg); border-color: var(--faint); }
+  .theme-toggle svg { width: 16px; height: 16px; }
+  .ic-moon { display: none; } .ic-sun { display: inline-flex; }
+  html[data-theme="light"] .ic-sun { display: none; } html[data-theme="light"] .ic-moon { display: inline-flex; }
 
   /* server chip */
-  .server { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 6px; }
+  .server { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
   .server .line { display: flex; align-items: center; gap: 9px; font-size: 11.5px; color: var(--muted); }
-  .server .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dormant); box-shadow: 0 0 8px transparent; }
-  .server.online  .dot { background: var(--live);    box-shadow: 0 0 9px var(--live); animation: pulse 2.2s ease-in-out infinite; }
-  .server.offline .dot { background: var(--down);    box-shadow: 0 0 9px var(--down); }
+  .server .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dormant); }
+  .server.online  .dot { background: var(--live); box-shadow: 0 0 9px var(--live); animation: pulse 2.2s ease-in-out infinite; }
+  .server.offline .dot { background: var(--down); box-shadow: 0 0 9px var(--down); }
   .server.connecting .dot, .server.file .dot { background: var(--watch); box-shadow: 0 0 9px var(--watch); }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 9px var(--live); } 50% { box-shadow: 0 0 2px var(--live); } }
-  .server .meta { color: var(--faint); font-size: 11px; }
+  .server .meta { color: var(--faint); font-size: 11px; text-align: right; }
   .server .ctrls { display: flex; gap: 7px; }
   .btn { background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-family: inherit; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 11px; border-radius: 7px; cursor: pointer; transition: all .15s; }
   .btn:hover { color: var(--fg); border-color: var(--faint); }
-  .btn.danger:hover { color: var(--down); border-color: rgba(251,94,107,0.4); }
+  .btn.danger:hover { color: var(--down); border-color: color-mix(in srgb, var(--down) 45%, transparent); }
   .btn:disabled { opacity: .4; cursor: default; }
 
   /* ---------- Sync banner ---------- */
-  .syncbar { display: none; align-items: center; gap: 14px; margin: 16px 0 0; padding: 11px 16px; border: 1px solid rgba(245,181,61,0.35); background: rgba(245,181,61,0.06); border-radius: 10px; font-size: 12.5px; color: var(--watch); }
+  .syncbar { display: none; align-items: center; gap: 14px; margin: 16px 0 0; padding: 11px 16px; border: 1px solid color-mix(in srgb, var(--watch) 35%, transparent); background: color-mix(in srgb, var(--watch) 9%, transparent); border-radius: 10px; font-size: 12.5px; color: var(--watch); }
   .syncbar.show { display: flex; }
   .syncbar .grow { flex: 1; }
   .syncbar .btn.sync { color: var(--bg); background: var(--watch); border-color: var(--watch); font-weight: 600; }
@@ -98,7 +130,7 @@
   .lane-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--line); border-top: 2px solid var(--lc); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lc); }
   .lane-head .lane-count { color: var(--faint); font-size: 11px; }
   .lane-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 80px; transition: background .12s; }
-  .lane-body.dragover { background: rgba(108,200,255,0.06); }
+  .lane-body.dragover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
   .lane-empty { color: var(--faint); font-size: 11.5px; text-align: center; padding: 18px 6px; border: 1px dashed var(--line); border-radius: 9px; }
 
   .tcard { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -112,7 +144,7 @@
   .tremove:hover { color: var(--down); }
   .tnotes { width: 100%; background: transparent; border: none; border-top: 1px solid var(--line); color: var(--fg); font-family: inherit; font-size: 12px; line-height: 1.45; padding: 8px 11px; resize: vertical; min-height: 36px; outline: none; }
   .tnotes::placeholder { color: var(--faint); }
-  .tnotes:focus { background: rgba(108,200,255,0.04); }
+  .tnotes:focus { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 
   /* ---------- Toolbar / registry ---------- */
   .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 30px 0 14px; }
@@ -120,7 +152,7 @@
   .search { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
   .search input { width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font-family: inherit; font-size: 13px; padding: 10px 14px 10px 38px; outline: none; transition: border-color .15s, box-shadow .15s; }
   .search input::placeholder { color: var(--faint); }
-  .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,200,255,0.12); }
+  .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 16%, transparent); }
   .search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--faint); }
   .filters { display: flex; gap: 7px; flex-wrap: wrap; }
   .filters button { background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-family: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 9px 13px; border-radius: 8px; cursor: pointer; transition: all .15s; }
@@ -156,9 +188,9 @@
   .gitbadge { font-size: 11px; letter-spacing: 0.03em; color: var(--sc); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
   .gitbadge .g { font-size: 12px; }
   .handover { justify-self: start; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-  .handover[data-h="known"]    { color: var(--live);  border-color: rgba(69,217,138,0.35); }
-  .handover[data-h="review"]   { color: var(--watch); border-color: rgba(245,181,61,0.35); }
-  .handover[data-h="blackbox"] { color: var(--down);  border-color: rgba(251,94,107,0.35); }
+  .handover[data-h="known"]    { color: var(--live);  border-color: color-mix(in srgb, var(--live) 38%, transparent); }
+  .handover[data-h="review"]   { color: var(--watch); border-color: color-mix(in srgb, var(--watch) 38%, transparent); }
+  .handover[data-h="blackbox"] { color: var(--down);  border-color: color-mix(in srgb, var(--down) 38%, transparent); }
   .openlink { justify-self: center; color: var(--accent); text-decoration: none; font-size: 14px; line-height: 1; }
   .openlink.dis { color: var(--faint); pointer-events: none; opacity: .5; }
   .openlink:hover { filter: brightness(1.2); }
@@ -187,11 +219,25 @@
   .tally .lab::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
 
   .empty { text-align: center; color: var(--faint); padding: 40px 0; font-size: 13px; }
-  footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--faint); font-size: 11px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
 
-  @media (max-width: 820px) {
-    .board { grid-template-columns: 1fr; }
-  }
+  /* ---------- Loading terminal ---------- */
+  .term-overlay { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); opacity: 0; transition: opacity .25s; }
+  .term-overlay.show { display: flex; opacity: 1; }
+  .term { width: min(660px, 92vw); background: #0c0d11; border: 1px solid #20242e; border-radius: 12px; box-shadow: 0 30px 80px -20px rgba(0,0,0,0.85); overflow: hidden; font-family: "IBM Plex Mono", monospace; }
+  .term-bar { display: flex; align-items: center; gap: 7px; padding: 9px 13px; background: #15171d; border-bottom: 1px solid #20242e; }
+  .term-bar .td { width: 11px; height: 11px; border-radius: 50%; }
+  .term-bar .td.r { background: #fb5e6b; } .term-bar .td.y { background: #f5b53d; } .term-bar .td.g { background: #45d98a; }
+  .term-bar .term-title { margin-left: 8px; color: #6a7180; font-size: 11px; letter-spacing: 0.12em; }
+  .term-body { padding: 14px 16px; max-height: 50vh; overflow-y: auto; font-size: 12px; line-height: 1.7; color: #cfd4dd; }
+  .term-body .tl { white-space: pre-wrap; word-break: break-all; }
+  .term-body .tl.gl { color: #6a7180; }
+  .term-body .tl.run { color: #9aa2b1; }
+  .term-body .tl.ok { color: #45d98a; margin-top: 7px; }
+  .term-body .tl.err { color: #fb5e6b; margin-top: 7px; }
+  .term-body .cursor { color: #45d98a; animation: blink 1s steps(1) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  @media (max-width: 820px) { .board { grid-template-columns: 1fr; } }
   @media (max-width: 720px) {
     .wrap { padding: 28px 16px 60px; }
     .tally { grid-template-columns: repeat(2, 1fr); }
@@ -205,11 +251,23 @@
 <div class="wrap">
 
   <header class="masthead">
-    <h1>MISSION<span class="slash">/</span>CONTROL</h1>
-    <div class="server connecting" id="server">
-      <div class="line"><span class="dot"></span><span id="server-state">connecting…</span></div>
-      <div class="meta" id="server-meta"></div>
-      <div class="ctrls" id="server-ctrls"></div>
+    <div class="title-block">
+      <h1>MISSION<span class="slash">/</span>CONTROL</h1>
+      <div class="subtitle">
+        <span class="n" id="count">0</span> projects · live git via repo_check.py<br>
+        registry + board in data/
+      </div>
+    </div>
+    <div class="right">
+      <button class="theme-toggle" id="theme-toggle" title="Toggle light / dark" aria-label="Toggle theme">
+        <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+      <div class="server connecting" id="server">
+        <div class="line"><span class="dot"></span><span id="server-state">connecting…</span></div>
+        <div class="meta" id="server-meta"></div>
+        <div class="ctrls" id="server-ctrls"></div>
+      </div>
     </div>
   </header>
 
@@ -247,11 +305,13 @@
 
   <main class="rows" id="rows"></main>
   <div class="tally" id="tally"></div>
+</div>
 
-  <footer>
-    <span>MISSION/CONTROL · <span id="count">0</span> projects</span>
-    <span>live git via repo_check.py · registry + board in data/</span>
-  </footer>
+<div class="term-overlay" id="term">
+  <div class="term">
+    <div class="term-bar"><span class="td r"></span><span class="td y"></span><span class="td g"></span><span class="term-title">repo_check — live scan</span></div>
+    <div class="term-body" id="term-body"></div>
+  </div>
 </div>
 
 <script>
@@ -272,14 +332,7 @@ const LANES = [["now", "Now"], ["next", "Next"], ["later", "Later"]];
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const $ = id => document.getElementById(id);
 
-let DATA = [];          // projects from /api/projects
-let BYNAME = {};        // name -> project
-let TODOS = {};         // name -> {lane, rank, notes}
-let STATUS = null;      // /api/status
-let CONN = "connecting";
-let activeFilter = "all";
-let DRAG = null;
-
+let DATA = [], BYNAME = {}, TODOS = {}, STATUS = null, CONN = "connecting", activeFilter = "all", DRAG = null;
 const rowsEl = $("rows"), searchEl = $("search");
 
 function gitMeta(p) { return (p && p.git && GIT[p.git.status]) || NOLIVE; }
@@ -303,28 +356,66 @@ function badgeText(p) {
   }
 }
 
-/* ---------------- connection state ---------------- */
-function setConn(state) {
-  CONN = state;
-  $("server").className = "server " + state;
+/* ---------------- theme ---------------- */
+$("theme-toggle").addEventListener("click", () => {
+  const light = document.documentElement.getAttribute("data-theme") === "light";
+  if (light) { document.documentElement.removeAttribute("data-theme"); }
+  else { document.documentElement.setAttribute("data-theme", "light"); }
+  try { localStorage.setItem("mc-theme", light ? "dark" : "light"); } catch (e) {}
+});
+
+/* ---------------- loading terminal ---------------- */
+const term = $("term"), termBody = $("term-body");
+let termTimer = null;
+function termShow(headline) {
+  clearTimeout(termTimer);
+  term.classList.add("show");
+  termBody.innerHTML = `<div class="tl run">${esc(headline)} <span class="cursor">▋</span></div>`;
 }
+function termFinish(log, summary, isErr) {
+  clearTimeout(termTimer);
+  const lines = (log && log.length) ? log : ["(no command log)"];
+  termBody.innerHTML = "";
+  const per = Math.max(6, Math.min(34, Math.floor(700 / lines.length)));
+  let i = 0;
+  (function step() {
+    if (i < lines.length) {
+      const d = document.createElement("div");
+      d.className = "tl" + (lines[i].startsWith("git ") ? " gl" : "");
+      d.textContent = lines[i];
+      termBody.appendChild(d);
+      termBody.scrollTop = termBody.scrollHeight;
+      i++;
+      termTimer = setTimeout(step, per);
+    } else {
+      const d = document.createElement("div");
+      d.className = "tl " + (isErr ? "err" : "ok");
+      d.textContent = summary;
+      termBody.appendChild(d);
+      termBody.scrollTop = termBody.scrollHeight;
+      termTimer = setTimeout(termHide, 2000);
+    }
+  })();
+}
+function termHide() { term.classList.remove("show"); }
+term.addEventListener("click", e => { if (e.target === term) termHide(); });
+
+/* ---------------- connection state ---------------- */
+function setConn(state) { CONN = state; $("server").className = "server " + state; }
 
 function renderServer() {
   const st = $("server-state"), meta = $("server-meta"), ctrls = $("server-ctrls");
   if (CONN === "file") {
     st.textContent = "open via the server";
-    meta.innerHTML = `run <b>mission-control.cmd</b>, then go to http://127.0.0.1:8787`;
-    ctrls.innerHTML = "";
-    return;
+    meta.innerHTML = `run <b>mission-control.cmd</b> → http://127.0.0.1:8787`;
+    ctrls.innerHTML = ""; return;
   }
   if (CONN === "offline") {
     st.textContent = "server offline";
     meta.innerHTML = `start it: <b>mission-control.cmd</b>`;
-    ctrls.innerHTML = "";
-    return;
+    ctrls.innerHTML = ""; return;
   }
   if (CONN === "connecting") { st.textContent = "connecting…"; meta.textContent = ""; ctrls.innerHTML = ""; return; }
-  // online
   const s = STATUS || {};
   st.textContent = "online";
   meta.textContent = `pid ${s.pid} · :${s.port} · up ${fmtUptime(s.uptime_seconds)}`;
@@ -332,21 +423,17 @@ function renderServer() {
   $("btn-restart").onclick = () => control("restart");
   $("btn-kill").onclick = () => control("shutdown");
 }
-
 function fmtUptime(s) {
   s = s || 0;
   if (s < 60) return s + "s";
   if (s < 3600) return Math.floor(s / 60) + "m";
   return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m";
 }
-
 async function control(action) {
   try { await fetch("/api/" + action, { method: "POST" }); } catch (e) {}
   setConn(action === "shutdown" ? "offline" : "connecting");
   renderServer();
-  // polling will pick the server back up after a restart
 }
-
 function renderSyncBanner() {
   const repo = (STATUS && STATUS.repo) || {};
   const show = CONN === "online" && (repo.todos_dirty || repo.ahead > 0);
@@ -359,20 +446,16 @@ function renderSyncBanner() {
   }
 }
 
-/* ---------------- data ---------------- */
 async function pollStatus() {
   if (location.protocol === "file:") { setConn("file"); renderServer(); return; }
   try {
     const r = await fetch("/api/status", { cache: "no-store" });
     STATUS = await r.json();
     const was = CONN;
-    setConn("online");
-    renderServer();
-    renderSyncBanner();
+    setConn("online"); renderServer(); renderSyncBanner();
     if (was !== "online") await reload(false);
   } catch (e) {
-    setConn("offline");
-    renderServer();
+    setConn("offline"); renderServer();
   }
 }
 
@@ -380,30 +463,31 @@ async function reload(fetchRemotes) {
   await Promise.all([loadTodos(), loadProjects(fetchRemotes)]);
   renderAll();
 }
-
 async function loadTodos() {
   try { TODOS = await (await fetch("/api/todos", { cache: "no-store" })).json() || {}; }
   catch (e) { TODOS = {}; }
 }
-
 async function loadProjects(fetchRemotes) {
-  $("refresh").classList.add("spin");
-  $("refresh").disabled = true;
+  $("refresh").classList.add("spin"); $("refresh").disabled = true;
   $("refresh-label").textContent = fetchRemotes ? "Fetching…" : "Scanning…";
+  termShow(fetchRemotes ? "$ scanning projects + fetching remotes…" : "$ scanning projects (local refs)…");
+  const t0 = performance.now();
   try {
     const payload = await (await fetch("/api/projects?fetch=" + (fetchRemotes ? "1" : "0"))).json();
     DATA = payload.projects || [];
     BYNAME = {}; DATA.forEach(p => BYNAME[p.name] = p);
     const t = (payload.scanned_at || "").replace("T", " ").slice(0, 19);
     const mode = payload.fetched ? "remotes fetched" : "local refs";
-    $("scaninfo").innerHTML = payload.error
-      ? `<span class="err">⚠ ${esc(payload.error)}</span>`
-      : `scanned ${esc(t)} · ${mode}`;
+    $("scaninfo").innerHTML = payload.error ? `<span class="err">⚠ ${esc(payload.error)}</span>` : `scanned ${esc(t)} · ${mode}`;
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    const withGit = DATA.filter(p => p.git).length;
+    if (payload.error) termFinish(payload.log, "⚠ " + payload.error, true);
+    else termFinish(payload.log, `✓ done · ${withGit} live repos scanned · ${secs}s`, false);
   } catch (e) {
     $("scaninfo").innerHTML = `<span class="err">⚠ scan failed</span>`;
+    termFinish(null, "⚠ scan failed — is the server up?", true);
   } finally {
-    $("refresh").classList.remove("spin");
-    $("refresh").disabled = false;
+    $("refresh").classList.remove("spin"); $("refresh").disabled = false;
     $("refresh-label").textContent = "Refresh";
   }
 }
@@ -415,19 +499,18 @@ function saveTodos(immediate) {
   const doIt = async () => {
     try {
       await fetch("/api/todos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(TODOS) });
-      pollStatus(); // refresh the sync banner
+      pollStatus();
     } catch (e) {}
   };
   if (immediate) doIt(); else saveTimer = setTimeout(doIt, 600);
 }
-
 function laneItems(lane) {
   return Object.keys(TODOS)
     .filter(n => TODOS[n] && TODOS[n].lane === lane)
     .sort((a, b) => (TODOS[a].rank ?? 0) - (TODOS[b].rank ?? 0));
 }
 
-/* ---------------- render: board ---------------- */
+/* ---------------- render ---------------- */
 function renderAll() { renderBoard(); renderRows(); renderTally(); }
 
 function renderBoard() {
@@ -447,10 +530,9 @@ function renderBoard() {
         <textarea class="tnotes" data-name="${esc(n)}" placeholder="what to work on for this customer…">${esc(notes)}</textarea>
       </div>`;
     }).join("");
-    const body = cards || `<div class="lane-empty">drop projects here</div>`;
     return `<div class="lane" style="--lc:var(--${lane})">
       <div class="lane-head" style="--lc:var(--${lane})">${label}<span class="lane-count">${names.length}</span></div>
-      <div class="lane-body" data-lane="${lane}">${body}</div>
+      <div class="lane-body" data-lane="${lane}">${cards || `<div class="lane-empty">drop projects here</div>`}</div>
     </div>`;
   }).join("");
   wireBoard();
@@ -498,20 +580,14 @@ function onDrop(e, body) {
   order.splice(idx, 0, name);
   TODOS[name] = { ...(TODOS[name] || { notes: "" }), lane };
   order.forEach((n, i) => { if (TODOS[n]) TODOS[n].rank = i; });
-  saveTodos(true);
-  renderBoard();
-  renderRows();
+  saveTodos(true); renderBoard(); renderRows();
 }
 
 function addToBoard(name) {
-  const end = laneItems("next").length;
-  TODOS[name] = { lane: "next", rank: end, notes: (TODOS[name] && TODOS[name].notes) || "" };
-  saveTodos(true);
-  renderBoard();
-  renderRows();
+  TODOS[name] = { lane: "next", rank: laneItems("next").length, notes: (TODOS[name] && TODOS[name].notes) || "" };
+  saveTodos(true); renderBoard(); renderRows();
 }
 
-/* ---------------- render: rows ---------------- */
 function detailHTML(p) {
   const v = (val) => val && val !== "—" && val !== "?"
     ? `<span class="v">${esc(val)}</span>`
@@ -556,11 +632,8 @@ function renderRows() {
     return [p.title, p.name, p.summary, p.host, p.contact, p.repo, ...(p.tech || [])]
       .join(" ").toLowerCase().includes(q);
   });
-
   rowsEl.innerHTML = rows.length ? rows.map(p => {
-    const m = gitMeta(p);
-    const grp = gitGroup(p);
-    const on = !!TODOS[p.name];
+    const m = gitMeta(p), grp = gitGroup(p), on = !!TODOS[p.name];
     return `<div class="item ${grp === "synced" ? "sync" : ""}" style="--sc:${m.c}">
       <div class="row" data-name="${esc(p.name)}">
         <span class="led"></span>
@@ -590,7 +663,7 @@ function renderTally() {
 /* ---------------- events ---------------- */
 rowsEl.addEventListener("click", e => {
   const star = e.target.closest(".star");
-  if (star) { e.stopPropagation(); const n = star.dataset.name; if (TODOS[n]) { delete TODOS[n]; saveTodos(true); } else { addToBoard(n); } return; }
+  if (star) { e.stopPropagation(); const n = star.dataset.name; if (TODOS[n]) { delete TODOS[n]; saveTodos(true); renderBoard(); renderRows(); } else { addToBoard(n); } return; }
   if (e.target.closest(".openlink")) return;
   const row = e.target.closest(".row");
   if (row) row.parentElement.classList.toggle("open");

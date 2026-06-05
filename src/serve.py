@@ -14,8 +14,9 @@ Serves index.html plus a small JSON API:
 Run:   python src/serve.py   /   python3 src/serve.py
 Or just the launcher in the repo root:  mission-control.cmd
 
-On startup it git-pulls the mission-control repo if the tree is clean, so
-switching machines shows the latest TODOs automatically.
+Running the launcher when a server is already up just opens the browser - it
+never starts a second one. On a fresh start it git-pulls the mission-control
+repo (when the tree is clean) so switching machines shows the latest TODOs.
 
 No third-party dependencies. Needs Python 3.8+ and git on PATH.
 """
@@ -27,6 +28,7 @@ import subprocess
 import sys
 import threading
 import time
+import urllib.request
 import webbrowser
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -138,29 +140,31 @@ def save_todos(data: dict) -> None:
     os.replace(tmp, TODOS)
 
 
-def run_repo_check(fetch: bool) -> tuple[list, str]:
+def run_repo_check(fetch: bool) -> tuple[list, str, list]:
+    wrapper = "$ python src/repo_check.py --json --root <projects>" + ("" if fetch else " --no-fetch")
     if not REPO_CHECK.exists():
-        return [], f"repo_check.py not found at {REPO_CHECK}"
-    cmd = [sys.executable, str(REPO_CHECK), "--json", "--root", str(SCAN_ROOT)]
+        return [], f"repo_check.py not found at {REPO_CHECK}", [wrapper]
+    cmd = [sys.executable, str(REPO_CHECK), "--json", "--log", "--root", str(SCAN_ROOT)]
     if not fetch:
         cmd.append("--no-fetch")
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True,
                               encoding="utf-8", errors="replace", timeout=120)
     except subprocess.TimeoutExpired:
-        return [], "repo_check.py timed out"
+        return [], "repo_check.py timed out", [wrapper]
     except OSError as e:
-        return [], f"could not run repo_check.py: {e}"
+        return [], f"could not run repo_check.py: {e}", [wrapper]
+    log = [wrapper] + [ln for ln in (proc.stderr or "").splitlines() if ln.strip()]
     try:
-        return json.loads(proc.stdout), ""
+        return json.loads(proc.stdout), "", log
     except json.JSONDecodeError:
         tail = (proc.stderr or proc.stdout or "no output").strip().splitlines()
-        return [], "repo_check.py did not return JSON: " + (tail[-1] if tail else "?")
+        return [], "repo_check.py did not return JSON: " + (tail[-1] if tail else "?"), log
 
 
 def build_payload(fetch: bool) -> dict:
     registry, reg_error = load_registry()
-    live, live_error = run_repo_check(fetch)
+    live, live_error, log = run_repo_check(fetch)
     live_by_name = {r.get("name"): r for r in live}
 
     projects, seen = [], set()
@@ -180,12 +184,14 @@ def build_payload(fetch: bool) -> dict:
         "projects": projects,
         "scanned_at": datetime.now().isoformat(timespec="seconds"),
         "fetched": fetch,
+        "log": log,
         "error": "; ".join(e for e in (reg_error, live_error) if e),
     }
 
 
 def status_payload() -> dict:
     return {
+        "app": "mission-control",
         "pid": os.getpid(), "host": HOST, "port": PORT,
         "started_at": START_ISO, "uptime_seconds": int(time.time() - START_TS),
         "repo": repo_state(),
@@ -264,8 +270,27 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+def probe_existing() -> str:
+    """If a mission-control server already owns the port, return its URL."""
+    try:
+        with urllib.request.urlopen(f"http://{HOST}:{PORT}/api/status", timeout=1.5) as r:
+            data = json.loads(r.read().decode("utf-8"))
+            if isinstance(data, dict) and data.get("app") == "mission-control":
+                return f"http://{HOST}:{PORT}/"
+    except Exception:
+        pass
+    return ""
+
+
 def main() -> int:
     global PORT
+
+    existing = probe_existing()
+    if existing:
+        print(f"mission-control: already running -> {existing} (opening browser)")
+        webbrowser.open(existing)
+        return 0
+
     print("mission-control:", pull_if_clean())
 
     httpd = None

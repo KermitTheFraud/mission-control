@@ -165,7 +165,9 @@ def load_todos() -> dict:
 def save_todos(data: dict) -> None:
     TODOS.parent.mkdir(parents=True, exist_ok=True)
     tmp = TODOS.with_name(TODOS.name + ".tmp")
-    tmp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    # newline="\n" so Windows doesn't write CRLF (the repo is LF via .gitattributes)
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:
+        f.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     os.replace(tmp, TODOS)
 
 

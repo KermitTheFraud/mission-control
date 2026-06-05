@@ -11,22 +11,17 @@
   },
   "trusted": {
     "notes": "HubSpot API test, ordre data analyse og send til Michael",
-    "lane": "next",
-    "rank": 0
+    "lane": "now",
+    "rank": 1
   },
   "farmfood-ai.dk": {
     "lane": "next",
     "rank": 1,
-    "notes": "BC adgang "
+    "notes": "BC adgang mangler stadig "
   },
   "kmrustfri": {
     "lane": "next",
     "rank": 2,
-    "notes": "VPS server setup"
-  },
-  "targarno-ai.dk": {
-    "lane": "next",
-    "rank": 3,
-    "notes": "AI svar feedback til Joachim"
+    "notes": "VPS server gateway "
   }
 }

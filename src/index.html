@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0b0e;
+    --panel: #121419;
+    --panel-2: #171a22;
+    --line: #232733;
+    --fg: #e8e9e4;
+    --muted: #868c9b;
+    --faint: #5a606e;
+    --accent: #6cc8ff;
+    --live: #45d98a;
+    --watch: #f5b53d;
+    --down: #fb5e6b;
+    --magenta: #d98ade;
+    --dormant: #717885;
+    --now: #f5b53d;
+    --next: #6cc8ff;
+    --later: #717885;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(900px 500px at 12% -8%, rgba(108,200,255,0.10), transparent 60%),
+      radial-gradient(700px 600px at 110% 0%, rgba(69,217,138,0.05), transparent 55%),
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 56px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 56px 100%;
+    opacity: 0.5; pointer-events: none;
+    mask-image: linear-gradient(180deg, #000 0%, #000 55%, transparent 100%);
+    z-index: 0;
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+    opacity: 0.025; pointer-events: none; z-index: 0;
+  }
+
+  .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 40px 32px 80px; }
+
+  /* ---------- Masthead ---------- */
+  .masthead { display: flex; justify-content: space-between; align-items: flex-start; gap: 28px; flex-wrap: wrap; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+  h1 { font-family: "Archivo", sans-serif; font-weight: 900; font-size: clamp(40px, 7vw, 74px); letter-spacing: -0.025em; line-height: 0.9; }
+  h1 .slash { color: var(--accent); }
+
+  /* server chip */
+  .server { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 6px; }
+  .server .line { display: flex; align-items: center; gap: 9px; font-size: 11.5px; color: var(--muted); }
+  .server .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--dormant); box-shadow: 0 0 8px transparent; }
+  .server.online  .dot { background: var(--live);    box-shadow: 0 0 9px var(--live); animation: pulse 2.2s ease-in-out infinite; }
+  .server.offline .dot { background: var(--down);    box-shadow: 0 0 9px var(--down); }
+  .server.connecting .dot, .server.file .dot { background: var(--watch); box-shadow: 0 0 9px var(--watch); }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 9px var(--live); } 50% { box-shadow: 0 0 2px var(--live); } }
+  .server .meta { color: var(--faint); font-size: 11px; }
+  .server .ctrls { display: flex; gap: 7px; }
+  .btn { background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-family: inherit; font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 6px 11px; border-radius: 7px; cursor: pointer; transition: all .15s; }
+  .btn:hover { color: var(--fg); border-color: var(--faint); }
+  .btn.danger:hover { color: var(--down); border-color: rgba(251,94,107,0.4); }
+  .btn:disabled { opacity: .4; cursor: default; }
+
+  /* ---------- Sync banner ---------- */
+  .syncbar { display: none; align-items: center; gap: 14px; margin: 16px 0 0; padding: 11px 16px; border: 1px solid rgba(245,181,61,0.35); background: rgba(245,181,61,0.06); border-radius: 10px; font-size: 12.5px; color: var(--watch); }
+  .syncbar.show { display: flex; }
+  .syncbar .grow { flex: 1; }
+  .syncbar .btn.sync { color: var(--bg); background: var(--watch); border-color: var(--watch); font-weight: 600; }
+  .syncbar .btn.sync:hover { filter: brightness(1.08); }
+
+  /* ---------- TODO board ---------- */
+  .section-head { display: flex; align-items: baseline; gap: 12px; margin: 30px 0 14px; }
+  .section-head h2 { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
+  .section-head .hint { font-size: 11px; color: var(--faint); }
+
+  .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .lane { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
+  .lane-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--line); border-top: 2px solid var(--lc); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lc); }
+  .lane-head .lane-count { color: var(--faint); font-size: 11px; }
+  .lane-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 80px; transition: background .12s; }
+  .lane-body.dragover { background: rgba(108,200,255,0.06); }
+  .lane-empty { color: var(--faint); font-size: 11.5px; text-align: center; padding: 18px 6px; border: 1px dashed var(--line); border-radius: 9px; }
+
+  .tcard { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .tcard.dragging { opacity: .35; }
+  .tcard-head { display: flex; align-items: center; gap: 9px; padding: 9px 11px; cursor: grab; }
+  .tcard-head:active { cursor: grabbing; }
+  .tnum { width: 18px; height: 18px; flex-shrink: 0; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); color: var(--lc); font-size: 10.5px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
+  .ttitle { flex: 1; min-width: 0; font-family: "Archivo", sans-serif; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tstat { font-size: 11px; flex-shrink: 0; }
+  .tremove { background: none; border: none; color: var(--faint); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
+  .tremove:hover { color: var(--down); }
+  .tnotes { width: 100%; background: transparent; border: none; border-top: 1px solid var(--line); color: var(--fg); font-family: inherit; font-size: 12px; line-height: 1.45; padding: 8px 11px; resize: vertical; min-height: 36px; outline: none; }
+  .tnotes::placeholder { color: var(--faint); }
+  .tnotes:focus { background: rgba(108,200,255,0.04); }
+
+  /* ---------- Toolbar / registry ---------- */
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 30px 0 14px; }
+  .toolleft { display: flex; align-items: center; gap: 12px; flex: 1; flex-wrap: wrap; }
+  .search { position: relative; flex: 1; min-width: 200px; max-width: 340px; }
+  .search input { width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; color: var(--fg); font-family: inherit; font-size: 13px; padding: 10px 14px 10px 38px; outline: none; transition: border-color .15s, box-shadow .15s; }
+  .search input::placeholder { color: var(--faint); }
+  .search input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,200,255,0.12); }
+  .search svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: var(--faint); }
+  .filters { display: flex; gap: 7px; flex-wrap: wrap; }
+  .filters button { background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-family: inherit; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; padding: 9px 13px; border-radius: 8px; cursor: pointer; transition: all .15s; }
+  .filters button:hover { color: var(--fg); border-color: var(--faint); }
+  .filters button.active { background: var(--fg); color: var(--bg); border-color: var(--fg); font-weight: 600; }
+  .refresh { background: var(--panel); border: 1px solid var(--line); color: var(--muted); font-family: inherit; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; padding: 9px 13px; border-radius: 8px; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 7px; }
+  .refresh:hover { color: var(--fg); border-color: var(--faint); }
+  .refresh:disabled { opacity: .5; cursor: default; }
+  .refresh svg { transition: transform .6s; }
+  .refresh.spin svg { animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .scaninfo { font-size: 11px; color: var(--faint); margin-bottom: 12px; min-height: 16px; }
+  .scaninfo .err { color: var(--down); }
+
+  /* ---------- Rows ---------- */
+  .rows { border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); }
+  .item { border-top: 1px solid var(--line); }
+  .item:first-child { border-top: none; }
+  .row { display: grid; grid-template-columns: 11px 26px minmax(0,1fr) 150px 100px 20px; align-items: center; gap: 14px; padding: 12px 18px; cursor: pointer; position: relative; transition: background .12s; }
+  .row:hover { background: var(--panel-2); }
+  .row::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--sc); opacity: .85; }
+  .led { width: 9px; height: 9px; border-radius: 50%; background: var(--sc); box-shadow: 0 0 9px var(--sc); }
+  .item.sync .led { animation: pulse 2.2s ease-in-out infinite; }
+
+  .star { background: none; border: none; cursor: pointer; font-size: 15px; line-height: 1; color: var(--faint); padding: 0; justify-self: center; }
+  .star.on { color: var(--watch); }
+  .star:hover { color: var(--watch); }
+
+  .name-cell { min-width: 0; display: flex; align-items: baseline; gap: 11px; }
+  .name-cell .nm { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 15px; white-space: nowrap; }
+  .name-cell .sm { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .gitbadge { font-size: 11px; letter-spacing: 0.03em; color: var(--sc); display: flex; align-items: center; gap: 7px; white-space: nowrap; }
+  .gitbadge .g { font-size: 12px; }
+  .handover { justify-self: start; font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .handover[data-h="known"]    { color: var(--live);  border-color: rgba(69,217,138,0.35); }
+  .handover[data-h="review"]   { color: var(--watch); border-color: rgba(245,181,61,0.35); }
+  .handover[data-h="blackbox"] { color: var(--down);  border-color: rgba(251,94,107,0.35); }
+  .openlink { justify-self: center; color: var(--accent); text-decoration: none; font-size: 14px; line-height: 1; }
+  .openlink.dis { color: var(--faint); pointer-events: none; opacity: .5; }
+  .openlink:hover { filter: brightness(1.2); }
+
+  .detail { display: none; padding: 4px 18px 18px 34px; }
+  .item.open .detail { display: block; }
+  .item.open .row { background: var(--panel-2); }
+  .dgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px 28px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .drow { display: grid; grid-template-columns: 70px 1fr; gap: 10px; align-items: baseline; }
+  .drow .k { font-size: 9.5px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--faint); padding-top: 1px; }
+  .drow .v { font-size: 12px; color: var(--fg); word-break: break-word; }
+  .drow .v.unknown { color: var(--faint); font-style: italic; }
+  .drow .v a { color: var(--accent); text-decoration: none; }
+  .drow .v a:hover { text-decoration: underline; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 10.5px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); padding: 2px 8px; border-radius: 6px; }
+  .commits { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); display: grid; gap: 5px; }
+  .commits .cm { font-size: 11.5px; color: var(--muted); display: flex; gap: 9px; }
+  .commits .cm .sha { color: var(--faint); }
+  .commits .cm .arw { color: var(--accent); }
+
+  .tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 14px; }
+  .tally .cell { background: var(--panel); padding: 11px 16px; }
+  .tally .num { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 24px; line-height: 1; }
+  .tally .lab { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+  .tally .lab::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+
+  .empty { text-align: center; color: var(--faint); padding: 40px 0; font-size: 13px; }
+  footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--faint); font-size: 11px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+  @media (max-width: 820px) {
+    .board { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .wrap { padding: 28px 16px 60px; }
+    .tally { grid-template-columns: repeat(2, 1fr); }
+    .row { grid-template-columns: 11px 24px minmax(0,1fr) auto; gap: 12px; }
+    .row .handover { display: none; }
+    .detail { padding-left: 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <h1>MISSION<span class="slash">/</span>CONTROL</h1>
+    <div class="server connecting" id="server">
+      <div class="line"><span class="dot"></span><span id="server-state">connecting…</span></div>
+      <div class="meta" id="server-meta"></div>
+      <div class="ctrls" id="server-ctrls"></div>
+    </div>
+  </header>
+
+  <div class="syncbar" id="syncbar">
+    <span class="grow" id="sync-text"></span>
+    <button class="btn sync" id="sync-btn">Sync ↑</button>
+  </div>
+
+  <div class="section-head">
+    <h2>TODO Board</h2>
+    <span class="hint">drag cards between lanes &amp; reorder to set priority · notes autosave</span>
+  </div>
+  <div class="board" id="board"></div>
+
+  <div class="toolbar">
+    <div class="toolleft">
+      <div class="search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="search" type="text" placeholder="Search projects…" autocomplete="off">
+      </div>
+      <div class="filters" id="filters">
+        <button class="active" data-filter="all">All</button>
+        <button data-filter="synced">In sync</button>
+        <button data-filter="push">Push</button>
+        <button data-filter="pull">Pull</button>
+        <button data-filter="attention">Attention</button>
+      </div>
+    </div>
+    <button class="refresh" id="refresh">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+      <span id="refresh-label">Refresh</span>
+    </button>
+  </div>
+  <div class="scaninfo" id="scaninfo"></div>
+
+  <main class="rows" id="rows"></main>
+  <div class="tally" id="tally"></div>
+
+  <footer>
+    <span>MISSION/CONTROL · <span id="count">0</span> projects</span>
+    <span>live git via repo_check.py · registry + board in data/</span>
+  </footer>
+</div>
+
+<script>
+const GIT = {
+  "IN SYNC":     { label: "in sync",     c: "var(--live)",    g: "●" },
+  "PUSH":        { label: "ahead",       c: "var(--accent)",  g: "⇡" },
+  "PULL":        { label: "behind",      c: "var(--watch)",   g: "⇣" },
+  "DIVERGED":    { label: "diverged",    c: "var(--down)",    g: "⇅" },
+  "DIRTY":       { label: "dirty",       c: "var(--magenta)", g: "●" },
+  "NO UPSTREAM": { label: "no upstream", c: "var(--watch)",   g: "⚠" },
+  "MISSING":     { label: "missing",     c: "var(--dormant)", g: "✗" },
+  "ERROR":       { label: "error",       c: "var(--down)",    g: "!" },
+};
+const NOLIVE = { label: "no scan", c: "var(--dormant)", g: "·" };
+const HANDOVER = { known: "Known", review: "Review", blackbox: "Black box" };
+const LANES = [["now", "Now"], ["next", "Next"], ["later", "Later"]];
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const $ = id => document.getElementById(id);
+
+let DATA = [];          // projects from /api/projects
+let BYNAME = {};        // name -> project
+let TODOS = {};         // name -> {lane, rank, notes}
+let STATUS = null;      // /api/status
+let CONN = "connecting";
+let activeFilter = "all";
+let DRAG = null;
+
+const rowsEl = $("rows"), searchEl = $("search");
+
+function gitMeta(p) { return (p && p.git && GIT[p.git.status]) || NOLIVE; }
+function gitGroup(p) {
+  const s = p && p.git && p.git.status;
+  if (!s) return "none";
+  if (s === "IN SYNC") return "synced";
+  if (s === "PUSH") return "push";
+  if (s === "PULL") return "pull";
+  return "attention";
+}
+function badgeText(p) {
+  const g = p && p.git;
+  if (!g) return NOLIVE.label;
+  switch (g.status) {
+    case "PUSH":     return `${g.ahead} ahead`;
+    case "PULL":     return `${g.behind} behind`;
+    case "DIVERGED": return `${g.ahead}/${g.behind}`;
+    case "DIRTY":    return `${g.dirty_count} dirty`;
+    default:         return GIT[g.status] ? GIT[g.status].label : g.status;
+  }
+}
+
+/* ---------------- connection state ---------------- */
+function setConn(state) {
+  CONN = state;
+  $("server").className = "server " + state;
+}
+
+function renderServer() {
+  const st = $("server-state"), meta = $("server-meta"), ctrls = $("server-ctrls");
+  if (CONN === "file") {
+    st.textContent = "open via the server";
+    meta.innerHTML = `run <b>mission-control.cmd</b>, then go to http://127.0.0.1:8787`;
+    ctrls.innerHTML = "";
+    return;
+  }
+  if (CONN === "offline") {
+    st.textContent = "server offline";
+    meta.innerHTML = `start it: <b>mission-control.cmd</b>`;
+    ctrls.innerHTML = "";
+    return;
+  }
+  if (CONN === "connecting") { st.textContent = "connecting…"; meta.textContent = ""; ctrls.innerHTML = ""; return; }
+  // online
+  const s = STATUS || {};
+  st.textContent = "online";
+  meta.textContent = `pid ${s.pid} · :${s.port} · up ${fmtUptime(s.uptime_seconds)}`;
+  ctrls.innerHTML = `<button class="btn" id="btn-restart">Restart</button><button class="btn danger" id="btn-kill">Kill</button>`;
+  $("btn-restart").onclick = () => control("restart");
+  $("btn-kill").onclick = () => control("shutdown");
+}
+
+function fmtUptime(s) {
+  s = s || 0;
+  if (s < 60) return s + "s";
+  if (s < 3600) return Math.floor(s / 60) + "m";
+  return Math.floor(s / 3600) + "h " + Math.floor((s % 3600) / 60) + "m";
+}
+
+async function control(action) {
+  try { await fetch("/api/" + action, { method: "POST" }); } catch (e) {}
+  setConn(action === "shutdown" ? "offline" : "connecting");
+  renderServer();
+  // polling will pick the server back up after a restart
+}
+
+function renderSyncBanner() {
+  const repo = (STATUS && STATUS.repo) || {};
+  const show = CONN === "online" && (repo.todos_dirty || repo.ahead > 0);
+  $("syncbar").classList.toggle("show", !!show);
+  if (show) {
+    const bits = [];
+    if (repo.todos_dirty) bits.push("unsynced board edits");
+    if (repo.ahead > 0) bits.push(`${repo.ahead} commit${repo.ahead > 1 ? "s" : ""} to push`);
+    $("sync-text").textContent = bits.join(" · ") + " — push before you switch machines";
+  }
+}
+
+/* ---------------- data ---------------- */
+async function pollStatus() {
+  if (location.protocol === "file:") { setConn("file"); renderServer(); return; }
+  try {
+    const r = await fetch("/api/status", { cache: "no-store" });
+    STATUS = await r.json();
+    const was = CONN;
+    setConn("online");
+    renderServer();
+    renderSyncBanner();
+    if (was !== "online") await reload(false);
+  } catch (e) {
+    setConn("offline");
+    renderServer();
+  }
+}
+
+async function reload(fetchRemotes) {
+  await Promise.all([loadTodos(), loadProjects(fetchRemotes)]);
+  renderAll();
+}
+
+async function loadTodos() {
+  try { TODOS = await (await fetch("/api/todos", { cache: "no-store" })).json() || {}; }
+  catch (e) { TODOS = {}; }
+}
+
+async function loadProjects(fetchRemotes) {
+  $("refresh").classList.add("spin");
+  $("refresh").disabled = true;
+  $("refresh-label").textContent = fetchRemotes ? "Fetching…" : "Scanning…";
+  try {
+    const payload = await (await fetch("/api/projects?fetch=" + (fetchRemotes ? "1" : "0"))).json();
+    DATA = payload.projects || [];
+    BYNAME = {}; DATA.forEach(p => BYNAME[p.name] = p);
+    const t = (payload.scanned_at || "").replace("T", " ").slice(0, 19);
+    const mode = payload.fetched ? "remotes fetched" : "local refs";
+    $("scaninfo").innerHTML = payload.error
+      ? `<span class="err">⚠ ${esc(payload.error)}</span>`
+      : `scanned ${esc(t)} · ${mode}`;
+  } catch (e) {
+    $("scaninfo").innerHTML = `<span class="err">⚠ scan failed</span>`;
+  } finally {
+    $("refresh").classList.remove("spin");
+    $("refresh").disabled = false;
+    $("refresh-label").textContent = "Refresh";
+  }
+}
+
+/* ---------------- todos persistence ---------------- */
+let saveTimer = null;
+function saveTodos(immediate) {
+  clearTimeout(saveTimer);
+  const doIt = async () => {
+    try {
+      await fetch("/api/todos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(TODOS) });
+      pollStatus(); // refresh the sync banner
+    } catch (e) {}
+  };
+  if (immediate) doIt(); else saveTimer = setTimeout(doIt, 600);
+}
+
+function laneItems(lane) {
+  return Object.keys(TODOS)
+    .filter(n => TODOS[n] && TODOS[n].lane === lane)
+    .sort((a, b) => (TODOS[a].rank ?? 0) - (TODOS[b].rank ?? 0));
+}
+
+/* ---------------- render: board ---------------- */
+function renderAll() { renderBoard(); renderRows(); renderTally(); }
+
+function renderBoard() {
+  $("board").innerHTML = LANES.map(([lane, label]) => {
+    const names = laneItems(lane);
+    const cards = names.map((n, i) => {
+      const p = BYNAME[n] || { title: n, name: n };
+      const m = gitMeta(p);
+      const notes = TODOS[n].notes || "";
+      return `<div class="tcard" data-name="${esc(n)}">
+        <div class="tcard-head" draggable="true">
+          <span class="tnum">${i + 1}</span>
+          <span class="ttitle" title="${esc(p.title || n)}">${esc(p.title || n)}</span>
+          <span class="tstat" style="color:${m.c}" title="${esc(p.git ? p.git.status : "no scan")}">${m.g}</span>
+          <button class="tremove" data-name="${esc(n)}" title="Remove from board">✕</button>
+        </div>
+        <textarea class="tnotes" data-name="${esc(n)}" placeholder="what to work on for this customer…">${esc(notes)}</textarea>
+      </div>`;
+    }).join("");
+    const body = cards || `<div class="lane-empty">drop projects here</div>`;
+    return `<div class="lane" style="--lc:var(--${lane})">
+      <div class="lane-head" style="--lc:var(--${lane})">${label}<span class="lane-count">${names.length}</span></div>
+      <div class="lane-body" data-lane="${lane}">${body}</div>
+    </div>`;
+  }).join("");
+  wireBoard();
+}
+
+function wireBoard() {
+  document.querySelectorAll(".tcard-head").forEach(h => {
+    const card = h.closest(".tcard");
+    h.addEventListener("dragstart", e => { DRAG = card.dataset.name; card.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
+    h.addEventListener("dragend", () => { DRAG = null; card.classList.remove("dragging"); document.querySelectorAll(".lane-body").forEach(b => b.classList.remove("dragover")); });
+  });
+  document.querySelectorAll(".lane-body").forEach(body => {
+    body.addEventListener("dragover", e => { e.preventDefault(); body.classList.add("dragover"); });
+    body.addEventListener("dragleave", () => body.classList.remove("dragover"));
+    body.addEventListener("drop", e => onDrop(e, body));
+  });
+  document.querySelectorAll(".tremove").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation(); delete TODOS[b.dataset.name]; saveTodos(true); renderBoard(); renderRows();
+  }));
+  document.querySelectorAll(".tnotes").forEach(t => t.addEventListener("input", () => {
+    const n = t.dataset.name; if (TODOS[n]) { TODOS[n].notes = t.value; saveTodos(); }
+  }));
+}
+
+function afterElement(body, y) {
+  const els = [...body.querySelectorAll(".tcard:not(.dragging)")];
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: -Infinity, element: null }).element;
+}
+
+function onDrop(e, body) {
+  e.preventDefault();
+  body.classList.remove("dragover");
+  const name = DRAG;
+  if (!name) return;
+  const lane = body.dataset.lane;
+  const after = afterElement(body, e.clientY);
+  const order = [...body.querySelectorAll(".tcard")].map(c => c.dataset.name).filter(n => n !== name);
+  let idx = after ? order.indexOf(after.dataset.name) : order.length;
+  if (idx < 0) idx = order.length;
+  order.splice(idx, 0, name);
+  TODOS[name] = { ...(TODOS[name] || { notes: "" }), lane };
+  order.forEach((n, i) => { if (TODOS[n]) TODOS[n].rank = i; });
+  saveTodos(true);
+  renderBoard();
+  renderRows();
+}
+
+function addToBoard(name) {
+  const end = laneItems("next").length;
+  TODOS[name] = { lane: "next", rank: end, notes: (TODOS[name] && TODOS[name].notes) || "" };
+  saveTodos(true);
+  renderBoard();
+  renderRows();
+}
+
+/* ---------------- render: rows ---------------- */
+function detailHTML(p) {
+  const v = (val) => val && val !== "—" && val !== "?"
+    ? `<span class="v">${esc(val)}</span>`
+    : `<span class="v unknown">${val === "?" ? "unknown" : "—"}</span>`;
+  const url = p.url
+    ? `<span class="v"><a href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.url.replace(/^https?:\/\//, ""))}</a></span>`
+    : `<span class="v unknown">—</span>`;
+  const tech = (p.tech || []).length
+    ? `<div class="chips">${p.tech.map(t => `<span class="chip">${esc(t)}</span>`).join("")}</div>`
+    : `<span class="v unknown">—</span>`;
+  let live = "";
+  const g = p.git;
+  if (g) {
+    const ahead = (g.ahead_commits || []).slice(0, 4).map(c => `<div class="cm"><span class="arw">↑</span><span class="sha">${esc(c.sha)}</span><span>${esc(c.subject)}</span></div>`).join("");
+    const behind = (g.behind_commits || []).slice(0, 4).map(c => `<div class="cm"><span class="arw">↓</span><span class="sha">${esc(c.sha)}</span><span>${esc(c.subject)}</span></div>`).join("");
+    live = `<div class="commits">
+      <div class="cm"><span class="sha">branch</span><span>${esc(g.branch || "-")}${g.upstream ? "  →  " + esc(g.upstream) : "  (no upstream)"}</span></div>
+      ${g.last_commit ? `<div class="cm"><span class="sha">last</span><span>${esc(g.last_commit.age)} · ${esc(g.last_commit.subject)}</span></div>` : ""}
+      ${ahead}${behind}
+    </div>`;
+  }
+  return `<div class="detail">
+    <div class="dgrid">
+      <div class="drow"><span class="k">Live URL</span>${url}</div>
+      <div class="drow"><span class="k">Host</span>${v(p.host)}</div>
+      <div class="drow"><span class="k">Repo</span>${v(p.repo)}</div>
+      <div class="drow"><span class="k">Lifecycle</span>${v(p.lifecycle)}</div>
+      <div class="drow"><span class="k">Contact</span>${v(p.contact)}</div>
+      <div class="drow"><span class="k">Creds</span>${v(p.creds)}</div>
+      <div class="drow"><span class="k">Tech</span>${tech}</div>
+      ${p.note ? `<div class="drow"><span class="k">Note</span><span class="v">${esc(p.note)}</span></div>` : ""}
+    </div>
+    ${live}
+  </div>`;
+}
+
+function renderRows() {
+  const q = searchEl.value.trim().toLowerCase();
+  const rows = DATA.filter(p => {
+    if (activeFilter !== "all" && gitGroup(p) !== activeFilter) return false;
+    if (!q) return true;
+    return [p.title, p.name, p.summary, p.host, p.contact, p.repo, ...(p.tech || [])]
+      .join(" ").toLowerCase().includes(q);
+  });
+
+  rowsEl.innerHTML = rows.length ? rows.map(p => {
+    const m = gitMeta(p);
+    const grp = gitGroup(p);
+    const on = !!TODOS[p.name];
+    return `<div class="item ${grp === "synced" ? "sync" : ""}" style="--sc:${m.c}">
+      <div class="row" data-name="${esc(p.name)}">
+        <span class="led"></span>
+        <button class="star ${on ? "on" : ""}" data-name="${esc(p.name)}" title="${on ? "On the board" : "Add to TODO board"}">${on ? "★" : "☆"}</button>
+        <div class="name-cell">
+          <span class="nm">${esc(p.title || p.name)}</span>
+          <span class="sm">${esc(p.summary || "")}</span>
+        </div>
+        <span class="gitbadge"><span class="g">${m.g}</span>${esc(badgeText(p))}</span>
+        <span class="handover" data-h="${esc(p.handover)}">${HANDOVER[p.handover] || ""}</span>
+        ${p.url ? `<a class="openlink" href="${esc(p.url)}" target="_blank" rel="noopener" title="Open live site">↗</a>` : `<span class="openlink dis" title="No live URL">↗</span>`}
+      </div>
+      ${detailHTML(p)}
+    </div>`;
+  }).join("") : `<div class="empty">No projects match.</div>`;
+  $("count").textContent = DATA.length;
+}
+
+function renderTally() {
+  const counts = { synced: 0, push: 0, pull: 0, attention: 0 };
+  DATA.forEach(p => { const g = gitGroup(p); if (counts[g] !== undefined) counts[g]++; });
+  const cells = [["synced", "In sync", "var(--live)"], ["push", "Push", "var(--accent)"], ["pull", "Pull", "var(--watch)"], ["attention", "Attention", "var(--down)"]];
+  $("tally").innerHTML = cells.map(([k, lab, c]) =>
+    `<div class="cell"><div class="num">${counts[k]}</div><div class="lab" style="--c:${c}">${lab}</div></div>`).join("");
+}
+
+/* ---------------- events ---------------- */
+rowsEl.addEventListener("click", e => {
+  const star = e.target.closest(".star");
+  if (star) { e.stopPropagation(); const n = star.dataset.name; if (TODOS[n]) { delete TODOS[n]; saveTodos(true); } else { addToBoard(n); } return; }
+  if (e.target.closest(".openlink")) return;
+  const row = e.target.closest(".row");
+  if (row) row.parentElement.classList.toggle("open");
+});
+$("filters").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  document.querySelectorAll(".filters button").forEach(b => b.classList.toggle("active", b === btn));
+  activeFilter = btn.dataset.filter;
+  renderRows();
+});
+searchEl.addEventListener("input", renderRows);
+$("refresh").addEventListener("click", () => reload(true));
+$("sync-btn").addEventListener("click", async () => {
+  $("sync-btn").disabled = true; $("sync-btn").textContent = "Syncing…";
+  try {
+    const r = await (await fetch("/api/sync", { method: "POST" })).json();
+    $("sync-text").textContent = r.message || (r.ok ? "synced" : "sync failed");
+  } catch (e) { $("sync-text").textContent = "sync failed"; }
+  $("sync-btn").disabled = false; $("sync-btn").textContent = "Sync ↑";
+  setTimeout(pollStatus, 400);
+});
+
+/* ---------------- boot ---------------- */
+renderServer();
+pollStatus();
+setInterval(pollStatus, 5000);
+</script>
+</body>
+</html>

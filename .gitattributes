@@ -1,0 +1,4 @@
+# Normalize all text files to LF on every platform.
+# The mission-control.cmd launcher is a sh/batch polyglot — the sh side breaks
+# on CRLF, and Windows cmd tolerates LF, so LF everywhere is the safe choice.
+* text=auto eol=lf

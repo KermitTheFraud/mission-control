@@ -7,6 +7,6 @@
   "mission-control": {
     "lane": "later",
     "rank": 0,
-    "notes": "drag n drop from table, not just press star."
+    "notes": "drag n drop from table, not just press star. The terminal scan should not be able to be clicked away. Where are notes saved? "
   }
 }

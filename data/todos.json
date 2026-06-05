@@ -1,6 +1,6 @@
 {
   "DMR-lab": {
-    "lane": "now",
+    "lane": "next",
     "rank": 0,
     "notes": "rettelser, arkiver og nye features"
   },
@@ -11,8 +11,8 @@
   },
   "trusted": {
     "notes": "HubSpot API test, ordre data analyse og send til Michael",
-    "lane": "now",
-    "rank": 1
+    "lane": "next",
+    "rank": 2
   },
   "farmfood-ai.dk": {
     "lane": "next",
@@ -20,8 +20,8 @@
     "notes": "BC adgang mangler stadig "
   },
   "kmrustfri": {
-    "lane": "next",
-    "rank": 2,
-    "notes": "VPS server gateway "
+    "lane": "now",
+    "rank": 1,
+    "notes": "schedule send mail"
   }
 }

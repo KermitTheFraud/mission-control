@@ -32,6 +32,9 @@ from pathlib import Path
 DEFAULT_ROOT = Path(__file__).resolve().parents[2]
 GIT_TIMEOUT = 30  # seconds per git command (fetch can be slow)
 LOG: list[str] = []  # git commands run this session (emitted to stderr with --log)
+# CREATE_NO_WINDOW: keep git from popping a console window when this runs under
+# pythonw (windowless). 0 (no-op) on non-Windows.
+NO_WINDOW = 0x08000000 if sys.platform == "win32" else 0
 
 
 def git(repo: Path, *args: str, timeout: int = GIT_TIMEOUT) -> tuple[int, str]:
@@ -41,7 +44,7 @@ def git(repo: Path, *args: str, timeout: int = GIT_TIMEOUT) -> tuple[int, str]:
         proc = subprocess.run(
             ["git", "-C", str(repo), *args],
             capture_output=True, text=True,
-            encoding="utf-8", errors="replace", timeout=timeout,
+            encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW,
         )
         return proc.returncode, proc.stdout.strip()
     except (subprocess.TimeoutExpired, OSError) as e:

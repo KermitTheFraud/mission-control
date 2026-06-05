@@ -1,1 +1,12 @@
-{}
+{
+  "DMR-lab": {
+    "lane": "now",
+    "rank": 0,
+    "notes": "rettelser, arkiver og nye features"
+  },
+  "mission-control": {
+    "lane": "later",
+    "rank": 0,
+    "notes": "drag n drop from table, not just press star."
+  }
+}

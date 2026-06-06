@@ -48,5 +48,10 @@
     "lane": "next",
     "rank": 3,
     "notes": "AI feedback til Joachim"
+  },
+  "dmr_lab": {
+    "lane": "next",
+    "rank": 4,
+    "notes": "Der er to lab mapper?"
   }
 }

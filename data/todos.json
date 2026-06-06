@@ -7,7 +7,7 @@
   "mission-control": {
     "lane": "later",
     "rank": 0,
-    "notes": "- [x] refresh: how-it-refreshes info (ⓘ tooltip)\n- [x] notes auto-grow (cap ~6 lines + expand/collapse)\n- [x] macOS version name (Tahoe)\n- [ ] FTP-drift column — repo_check --ftp → /api/projects?ftp=1\n- [ ] filters: lifecycle (live/watch/dormant/down) + handover\n- [ ] fill real contact + creds per project\n- [ ] wez-design: git init + remote + push (leaves \"no scan\")\n- [ ] cross-machine: apply github-repos + wez-internal renames on Omarchy + Windows\n- [ ] verify launcher auto-close + Kill & Close (window.close) in Brave"
+    "notes": "- [x] refresh: how-it-refreshes info (ⓘ tooltip)\n- [x] notes auto-grow (cap ~6 lines + expand/collapse)\n- [x] macOS version name (Tahoe)\n- [ ] FTP-drift column — repo_check --ftp → /api/projects?ftp=1\n- [ ] filters: lifecycle (live/watch/dormant/down) + handover\n- [ ] fill real contact + creds per project\n- [ ] wez-design: git init + remote + push (leaves \"no scan\")\n- [ ] cross-machine: apply github-repos + wez-internal renames on Omarchy + Windows\n- [ ] verify launcher auto-close + Kill & Close (window.close) in Brave\n- [ ] currently kmrustfri is blocked or awaiting respose from stakeholders. Add a button on the card to set it in \"blocked/waiting\" mode? Consider best approach here"
   },
   "trusted": {
     "notes": "HubSpot API test, ordre data analyse og send til Michael",

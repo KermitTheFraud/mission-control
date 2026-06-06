@@ -431,6 +431,20 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
+def preflight() -> str:
+    """Verify the two things this tool assumes are on the machine: Python 3.8+
+    (we're clearly running *some* Python, but bail loudly on an ancient one) and
+    git on PATH. Returns an error string if something's missing, else ""."""
+    if sys.version_info < (3, 8):
+        have = ".".join(map(str, sys.version_info[:3]))
+        return (f"Python 3.8+ required, but this is {have}. "
+                "Install a newer Python from https://www.python.org/downloads/")
+    if shutil.which("git") is None:
+        return ("git not found on PATH. Install it from https://git-scm.com/downloads "
+                "and reopen your terminal.")
+    return ""
+
+
 def probe_existing() -> str:
     """If a mission-control server already owns the port, return its URL."""
     try:
@@ -486,4 +500,12 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+    if "--osinfo" in sys.argv:
+        # Printed by the launcher banner: "System identified as Windows 10 · 10.0.19045"
+        _os = detect_os()
+        _line = "System identified as " + _os["name"]
+        if _os.get("detail"):
+            _line += " · " + _os["detail"]
+        print(_line)
+        sys.exit(0)
     sys.exit(main())

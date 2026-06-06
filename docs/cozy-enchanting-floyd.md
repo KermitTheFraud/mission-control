@@ -109,3 +109,12 @@ Add themed scrollbars (`::-webkit-scrollbar*` + Firefox `scrollbar-color/width`)
 
 ### Verify (rev 2)
 Arrows show one-at-a-time in the gutter, never over text; no signal-bars; pause toggle bigger; backlog (both modes) caps at ~10 lines + scroll; tally sits by the title and survives a narrow window; terminal shows the star + rotating verbs; "+" adds at top, done items sink, Archive moves `[x]` into `data/backlog-archive.json`; autoclose lines all read "Autoclose in N.."; scrollbars are dark in dark mode.
+
+---
+
+# Revision 3 (polish follow-up)
+
+- **Terminal animation confined + calmed.** The star sits in a fixed-width slot (`.spinner { display:inline-block; width:1.15em; text-align:center }`) so the verb no longer jumps as the glyph width changes; cadence slowed 120ms → 300ms; elapsed shows whole seconds. The verb now lives in its own `#tverb` span and **sweeps in left-to-right** on each change via a re-triggered `clip-path: inset(0 100% 0 0) → inset(0 0 0 0)` animation (`verbSweep`).
+- **WeZimplify spinner words.** Claude's original ~184 verbs are kept in the file as `CLAUDE_VERBS` (unused); the active list is `WEZ_VERBS` — brand/security/dev words plus a little Danish (Zimplifying, Securing by design, Vibing, Hooking HubSpot, Lige om lidt, …).
+- **Online-dot glow no longer clipped.** `.status-line` (an `.l2`, which is `overflow:hidden` for ellipsis) clipped the dot's box-shadow; `.sect-right .status-line { overflow: visible }` fixes the uneven halo.
+- **Launcher OS banner.** `serve.py --osinfo` prints `System identified as <name> · <detail>`; `mission-control.cmd` calls it (after `chcp 65001` for the `·`) on both branches so the launch terminal shows e.g. `System identified as Windows 10 · 10.0.19045`.

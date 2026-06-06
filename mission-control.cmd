@@ -2,8 +2,10 @@
 @echo off
 REM ===== Windows: bigger window, probe first, else start detached + countdown-close =====
 mode con: cols=100 lines=35 >nul 2>&1
+chcp 65001 >nul 2>&1
 echo mission-control
 echo ------------------------------------------------------------
+python "%~dp0src\serve.py" --osinfo 2>nul
 REM Already running? Don't start a second server or open a second tab.
 curl -s -m 2 http://127.0.0.1:8787/api/status 2>nul | find "mission-control" >nul 2>&1
 if %errorlevel%==0 (
@@ -32,6 +34,7 @@ ___BAT___
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 echo "mission-control"
 echo "------------------------------------------------------------"
+python3 "$ROOT/src/serve.py" --osinfo 2>/dev/null
 # Already running? Don't start a second server or open a second tab.
 if curl -s -m 2 http://127.0.0.1:8787/api/status 2>/dev/null | grep -q mission-control; then
   echo "Already running at http://127.0.0.1:8787"

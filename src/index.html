@@ -115,6 +115,7 @@
   .sect-right .l3 { font-size: 11px; }
   .ctrls-line { display: flex; align-items: center; gap: 7px; }
   .status-line { display: flex; align-items: center; gap: 7px; color: var(--faint); font-size: 11px; }
+  .sect-right .status-line { overflow: visible; }   /* don't clip the status dot's glow */
   .status-line .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--dormant); flex-shrink: 0; }
   .sect-right.online  .dot { background: var(--live);  box-shadow: 0 0 8px var(--live); animation: pulse 2.2s ease-in-out infinite; }
   .sect-right.offline .dot { background: var(--down);  box-shadow: 0 0 8px var(--down); }
@@ -321,9 +322,12 @@
   .term-body .tl.ok { color: #45d98a; margin-top: 7px; }
   .term-body .tl.err { color: #fb5e6b; margin-top: 7px; }
   .term-body .cursor { color: #45d98a; animation: blink 1s steps(1) infinite; }
-  .term-body .spinner { color: #45d98a; }
+  .term-body .spinner { display: inline-block; width: 1.15em; text-align: center; color: #45d98a; }
+  .term-body .verb { display: inline-block; }
+  .term-body .verb.sweep { animation: verbSweep .5s ease-out; }
   .term-body .elapsed { color: #6a7180; }
   @keyframes blink { 50% { opacity: 0; } }
+  @keyframes verbSweep { from { clip-path: inset(0 100% 0 0); opacity: .35; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
 
   /* ---------- Kill & Close: "safe to close" overlay ---------- */
   .killed-overlay { position: fixed; inset: 0; z-index: 60; display: none; align-items: center; justify-content: center; background: var(--bg); }
@@ -500,8 +504,11 @@ const term = $("term"), termBody = $("term-body");
 let termTimer = null, termExplain = "", termSpin = null;
 // Claude Code's loading animation: a pulsing star glyph + a rotating whimsical verb.
 const STAR = ["·", "✢", "✳", "✶", "✻", "✽"];
-const VERBS = ["Accomplishing","Actioning","Actualizing","Architecting","Baking","Beaming","Beboppin'","Befuddling","Billowing","Blanching","Bloviating","Boogieing","Boondoggling","Booping","Bootstrapping","Brewing","Bunning","Burrowing","Calculating","Canoodling","Caramelizing","Cascading","Catapulting","Cerebrating","Channeling","Choreographing","Churning","Clauding","Coalescing","Cogitating","Combobulating","Composing","Computing","Concocting","Considering","Contemplating","Cooking","Crafting","Creating","Crunching","Crystallizing","Cultivating","Deciphering","Deliberating","Determining","Dilly-dallying","Discombobulating","Doing","Doodling","Drizzling","Ebbing","Effecting","Elucidating","Embellishing","Enchanting","Envisioning","Evaporating","Fermenting","Fiddle-faddling","Finagling","Flambéing","Flibbertigibbeting","Flowing","Flummoxing","Fluttering","Forging","Forming","Frolicking","Frosting","Gallivanting","Galloping","Garnishing","Generating","Gesticulating","Germinating","Gitifying","Grooving","Gusting","Harmonizing","Hashing","Hatching","Herding","Honking","Hullaballooing","Hyperspacing","Ideating","Imagining","Improvising","Incubating","Inferring","Infusing","Ionizing","Jitterbugging","Julienning","Kneading","Leavening","Levitating","Lollygagging","Manifesting","Marinating","Meandering","Metamorphosing","Misting","Moonwalking","Moseying","Mulling","Mustering","Musing","Nebulizing","Nesting","Noodling","Nucleating","Orbiting","Orchestrating","Osmosing","Perambulating","Percolating","Perusing","Philosophising","Photosynthesizing","Pollinating","Pondering","Pontificating","Pouncing","Precipitating","Prestidigitating","Processing","Proofing","Propagating","Puttering","Puzzling","Quantumizing","Razzle-dazzling","Razzmatazzing","Recombobulating","Reticulating","Roosting","Ruminating","Sautéing","Scampering","Schlepping","Scurrying","Seasoning","Shenaniganing","Shimmying","Simmering","Skedaddling","Sketching","Slithering","Smooshing","Spelunking","Spinning","Sprouting","Stewing","Sublimating","Swirling","Swooping","Symbioting","Synthesizing","Tempering","Thinking","Thundering","Tinkering","Tomfoolering","Topsy-turvying","Transfiguring","Transmuting","Twisting","Undulating","Unfurling","Unravelling","Vibing","Waddling","Wandering","Warping","Whatchamacalliting","Whirlpooling","Whirring","Whisking","Wibbling","Working","Wrangling","Zesting","Zigzagging"];
-const pickVerb = () => VERBS[Math.floor(Math.random() * VERBS.length)];
+// Claude Code's original spinner verbs — kept for reference, not used in this project.
+const CLAUDE_VERBS = ["Accomplishing","Actioning","Actualizing","Architecting","Baking","Beaming","Beboppin'","Befuddling","Billowing","Blanching","Bloviating","Boogieing","Boondoggling","Booping","Bootstrapping","Brewing","Bunning","Burrowing","Calculating","Canoodling","Caramelizing","Cascading","Catapulting","Cerebrating","Channeling","Choreographing","Churning","Clauding","Coalescing","Cogitating","Combobulating","Composing","Computing","Concocting","Considering","Contemplating","Cooking","Crafting","Creating","Crunching","Crystallizing","Cultivating","Deciphering","Deliberating","Determining","Dilly-dallying","Discombobulating","Doing","Doodling","Drizzling","Ebbing","Effecting","Elucidating","Embellishing","Enchanting","Envisioning","Evaporating","Fermenting","Fiddle-faddling","Finagling","Flambéing","Flibbertigibbeting","Flowing","Flummoxing","Fluttering","Forging","Forming","Frolicking","Frosting","Gallivanting","Galloping","Garnishing","Generating","Gesticulating","Germinating","Gitifying","Grooving","Gusting","Harmonizing","Hashing","Hatching","Herding","Honking","Hullaballooing","Hyperspacing","Ideating","Imagining","Improvising","Incubating","Inferring","Infusing","Ionizing","Jitterbugging","Julienning","Kneading","Leavening","Levitating","Lollygagging","Manifesting","Marinating","Meandering","Metamorphosing","Misting","Moonwalking","Moseying","Mulling","Mustering","Musing","Nebulizing","Nesting","Noodling","Nucleating","Orbiting","Orchestrating","Osmosing","Perambulating","Percolating","Perusing","Philosophising","Photosynthesizing","Pollinating","Pondering","Pontificating","Pouncing","Precipitating","Prestidigitating","Processing","Proofing","Propagating","Puttering","Puzzling","Quantumizing","Razzle-dazzling","Razzmatazzing","Recombobulating","Reticulating","Roosting","Ruminating","Sautéing","Scampering","Schlepping","Scurrying","Seasoning","Shenaniganing","Shimmying","Simmering","Skedaddling","Sketching","Slithering","Smooshing","Spelunking","Spinning","Sprouting","Stewing","Sublimating","Swirling","Swooping","Symbioting","Synthesizing","Tempering","Thinking","Thundering","Tinkering","Tomfoolering","Topsy-turvying","Transfiguring","Transmuting","Twisting","Undulating","Unfurling","Unravelling","Vibing","Waddling","Wandering","Warping","Whatchamacalliting","Whirlpooling","Whirring","Whisking","Wibbling","Working","Wrangling","Zesting","Zigzagging"];
+// WeZimplify's own loading words (brand · security · dev · a little Danish) — used instead of Claude's.
+const WEZ_VERBS = ["Zimplifying","Securing by design","Vibing","Automating","Orchestrating agents","Wrangling webhooks","Syncing CRMs","Crunching orders","Tuning prompts","Shipping","Deploying","Refactoring","Herding repos","Polling remotes","Closing tickets","Onboarding customers","Mapping flows","Parsing invoices","Hooking HubSpot","Wiring agents","Greasing pipelines","Caffeinating","Untangling legacy","Squashing bugs","Aligning stakeholders","Building agents","Training the bot","Indexing docs","Scanning repos","Sweeping drift","Streamlining","Optimizing","Securing endpoints","Shipping value","Lige om lidt","Næsten klar"];
+const pickVerb = () => WEZ_VERBS[Math.floor(Math.random() * WEZ_VERBS.length)];
 function termShow(headline, explain, busyLabel) {
   clearTimeout(termTimer); clearInterval(termSpin);
   termExplain = explain || "";
@@ -509,17 +516,20 @@ function termShow(headline, explain, busyLabel) {
   termBody.innerHTML = `<div class="tl run">${esc(headline)}</div>`
     + (termExplain ? `<div class="tl note">${esc(termExplain)}</div>` : "")
     + (busyLabel ? `<div class="tl note">${esc(busyLabel)}</div>` : "")
-    + `<div class="tl run" id="term-spin"></div>`;
-  // pulsing star + a whimsical verb that rotates, so a slow git fetch never looks frozen
-  const spinEl = $("term-spin"), t0 = performance.now();
-  let f = 0, verb = pickVerb(), lastSwap = 0;
+    + `<div class="tl run"><span class="spinner" id="tspin">${STAR[0]}</span> <span class="verb" id="tverb"></span><span class="elapsed" id="telapsed"></span></div>`;
+  // fixed-width star slot (so the verb never jumps) + a verb that sweeps in on change
+  const spinEl = $("tspin"), verbEl = $("tverb"), elEl = $("telapsed"), t0 = performance.now();
+  const setVerb = w => { verbEl.textContent = w + "…"; verbEl.classList.remove("sweep"); void verbEl.offsetWidth; verbEl.classList.add("sweep"); };
+  let f = 0, lastSwap = 0;
+  setVerb(pickVerb());
   const paint = () => {
     const secs = (performance.now() - t0) / 1000;
-    if (secs - lastSwap > 2.5) { verb = pickVerb(); lastSwap = secs; }
-    spinEl.innerHTML = `<span class="spinner">${STAR[f++ % STAR.length]}</span> ${esc(verb)}<span class="elapsed">… ${secs.toFixed(1)}s</span>`;
+    spinEl.textContent = STAR[f++ % STAR.length];
+    elEl.textContent = "  " + Math.floor(secs) + "s";
+    if (secs - lastSwap >= 3) { lastSwap = secs; setVerb(pickVerb()); }
   };
   paint();
-  termSpin = setInterval(paint, 120);
+  termSpin = setInterval(paint, 300);
 }
 function termFinish(log, summary, isErr) {
   clearTimeout(termTimer); clearInterval(termSpin);

@@ -147,9 +147,23 @@
   .tstat { font-size: 13px; flex-shrink: 0; }
   .tremove { background: none; border: none; color: var(--faint); cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; flex-shrink: 0; }
   .tremove:hover { color: var(--down); }
-  .tnotes { width: 100%; background: transparent; border: none; border-top: 1px solid var(--line); color: var(--fg); font-family: inherit; font-size: 12px; line-height: 1.45; padding: 8px 11px; resize: vertical; min-height: 36px; outline: none; }
+  /* resize:none + overflow:hidden — height is driven by autoGrow() to fit content */
+  .tnotes { width: 100%; background: transparent; border: none; border-top: 1px solid var(--line); color: var(--fg); font-family: inherit; font-size: 12px; line-height: 1.45; padding: 8px 11px; resize: none; overflow: hidden; min-height: 44px; outline: none; }
   .tnotes::placeholder { color: var(--faint); }
   .tnotes:focus { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+
+  /* the dashboard's own card (self-backlog) reads distinctly from customer cards */
+  .tcard.self { border-color: color-mix(in srgb, var(--magenta) 55%, var(--line)); background: color-mix(in srgb, var(--magenta) 9%, var(--panel-2)); }
+  .tcard.self .tnotes { border-top-color: color-mix(in srgb, var(--magenta) 30%, var(--line)); }
+  .tcard.self .tnotes:focus { background: color-mix(in srgb, var(--magenta) 13%, transparent); }
+  .selftag { font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--magenta); border: 1px solid color-mix(in srgb, var(--magenta) 45%, var(--line)); border-radius: 999px; padding: 2px 6px; flex-shrink: 0; }
+
+  /* ---------- Group tabs (Customers / Internal) ---------- */
+  .grouptabs { display: flex; gap: 2px; margin: 30px 0 14px; border-bottom: 1px solid var(--line); }
+  .grouptabs button { background: none; border: none; border-bottom: 2px solid transparent; color: var(--muted); font-family: "Archivo", sans-serif; font-weight: 700; font-size: 13.5px; letter-spacing: 0.04em; text-transform: uppercase; padding: 9px 15px; cursor: pointer; transition: color .15s, border-color .15s; margin-bottom: -1px; }
+  .grouptabs button:hover { color: var(--fg); }
+  .grouptabs button.active { color: var(--fg); border-bottom-color: var(--accent); }
+  .grouptabs .gt-count { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 11px; color: var(--faint); margin-left: 7px; letter-spacing: 0; }
 
   /* ---------- Toolbar / registry ---------- */
   .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin: 30px 0 14px; }
@@ -238,6 +252,7 @@
   .term-body .tl { white-space: pre-wrap; word-break: break-all; }
   .term-body .tl.gl { color: #6a7180; }
   .term-body .tl.run { color: #9aa2b1; }
+  .term-body .tl.note { color: #8a92a3; font-style: italic; margin-bottom: 8px; }
   .term-body .tl.ok { color: #45d98a; margin-top: 7px; }
   .term-body .tl.err { color: #fb5e6b; margin-top: 7px; }
   .term-body .cursor { color: #45d98a; animation: blink 1s steps(1) infinite; }
@@ -292,6 +307,11 @@
   </div>
   <div class="board" id="board"></div>
 
+  <div class="grouptabs" id="grouptabs">
+    <button class="active" data-group="customer">Customers<span class="gt-count" id="gt-customer"></span></button>
+    <button data-group="internal">Internal<span class="gt-count" id="gt-internal"></span></button>
+  </div>
+
   <div class="toolbar">
     <div class="toolleft">
       <div class="search">
@@ -342,7 +362,7 @@ const LANES = [["now", "Now"], ["next", "Next"], ["later", "Later"]];
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
 const $ = id => document.getElementById(id);
 
-let DATA = [], BYNAME = {}, TODOS = {}, STATUS = null, CONN = "connecting", activeFilter = "all", DRAG = null;
+let DATA = [], BYNAME = {}, TODOS = {}, STATUS = null, CONN = "connecting", activeFilter = "all", activeGroup = "customer", DRAG = null;
 const rowsEl = $("rows"), searchEl = $("search");
 
 function gitMeta(p) { return (p && p.git && GIT[p.git.status]) || NOLIVE; }
@@ -354,6 +374,8 @@ function gitGroup(p) {
   if (s === "PULL") return "pull";
   return "attention";
 }
+/* customer vs internal — default to customer for old payloads without a group field */
+function groupOf(p) { return p && p.group === "internal" ? "internal" : "customer"; }
 function badgeText(p) {
   const g = p && p.git;
   if (!g) return NOLIVE.label;
@@ -376,16 +398,18 @@ $("theme-toggle").addEventListener("click", () => {
 
 /* ---------------- loading terminal ---------------- */
 const term = $("term"), termBody = $("term-body");
-let termTimer = null;
-function termShow(headline) {
+let termTimer = null, termExplain = "";
+function termShow(headline, explain) {
   clearTimeout(termTimer);
+  termExplain = explain || "";
   term.classList.add("show");
-  termBody.innerHTML = `<div class="tl run">${esc(headline)} <span class="cursor">▋</span></div>`;
+  termBody.innerHTML = `<div class="tl run">${esc(headline)} <span class="cursor">▋</span></div>`
+    + (termExplain ? `<div class="tl note">${esc(termExplain)}</div>` : "");
 }
 function termFinish(log, summary, isErr) {
   clearTimeout(termTimer);
   const lines = (log && log.length) ? log : ["(no command log)"];
-  termBody.innerHTML = "";
+  termBody.innerHTML = termExplain ? `<div class="tl note">${esc(termExplain)}</div>` : "";
   const per = Math.max(6, Math.min(34, Math.floor(700 / lines.length)));
   let i = 0;
   (function step() {
@@ -488,7 +512,12 @@ async function loadTodos() {
 async function loadProjects(fetchRemotes) {
   $("refresh").classList.add("spin"); $("refresh").disabled = true;
   $("refresh-label").textContent = fetchRemotes ? "Fetching…" : "Scanning…";
-  termShow(fetchRemotes ? "$ scanning projects + fetching remotes…" : "$ scanning projects (local refs)…");
+  termShow(
+    fetchRemotes ? "$ scanning projects + fetching remotes…" : "$ scanning projects (local refs)…",
+    fetchRemotes
+      ? "Refresh runs git fetch on every repo, then compares each against its upstream — recomputing ahead / behind / dirty and the last commit for every project."
+      : "Reading local git refs only (no network) — status is recomputed from already-fetched data."
+  );
   const t0 = performance.now();
   try {
     const payload = await (await fetch("/api/projects?fetch=" + (fetchRemotes ? "1" : "0"))).json();
@@ -529,7 +558,18 @@ function laneItems(lane) {
 }
 
 /* ---------------- render ---------------- */
-function renderAll() { renderBoard(); renderRows(); renderTally(); }
+/* grow a notes textarea to fit its content so all text is visible (no inner scrollbar) */
+function autoGrow(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
+function renderAll() { renderBoard(); renderGroupTabs(); renderRows(); renderTally(); }
+
+function renderGroupTabs() {
+  const counts = { customer: 0, internal: 0 };
+  DATA.forEach(p => { counts[groupOf(p)]++; });
+  $("gt-customer").textContent = counts.customer || "";
+  $("gt-internal").textContent = counts.internal || "";
+  document.querySelectorAll("#grouptabs button").forEach(b =>
+    b.classList.toggle("active", b.dataset.group === activeGroup));
+}
 
 function renderBoard() {
   $("board").innerHTML = LANES.map(([lane, label]) => {
@@ -538,14 +578,16 @@ function renderBoard() {
       const p = BYNAME[n] || { title: n, name: n };
       const m = gitMeta(p);
       const notes = TODOS[n].notes || "";
-      return `<div class="tcard" data-name="${esc(n)}">
+      const isSelf = n === "mission-control";
+      return `<div class="tcard${isSelf ? " self" : ""}" data-name="${esc(n)}">
         <div class="tcard-head" draggable="true">
           <span class="tnum">${i + 1}</span>
           <span class="ttitle" title="${esc(p.title || n)}">${esc(p.title || n)}</span>
+          ${isSelf ? `<span class="selftag" title="This dashboard's own backlog">self</span>` : ""}
           <span class="tstat" style="color:${m.c}" title="${esc(p.git ? p.git.status : "no scan")}">${m.g}</span>
           <button class="tremove" data-name="${esc(n)}" title="Remove from board">✕</button>
         </div>
-        <textarea class="tnotes" data-name="${esc(n)}" placeholder="what to work on for this customer…">${esc(notes)}</textarea>
+        <textarea class="tnotes" data-name="${esc(n)}" placeholder="${isSelf ? "improvements for mission-control itself…" : "what to work on for this customer…"}">${esc(notes)}</textarea>
       </div>`;
     }).join("");
     return `<div class="lane" style="--lc:var(--${lane})">
@@ -570,9 +612,13 @@ function wireBoard() {
   document.querySelectorAll(".tremove").forEach(b => b.addEventListener("click", e => {
     e.stopPropagation(); delete TODOS[b.dataset.name]; saveTodos(true); renderBoard(); renderRows();
   }));
-  document.querySelectorAll(".tnotes").forEach(t => t.addEventListener("input", () => {
-    const n = t.dataset.name; if (TODOS[n]) { TODOS[n].notes = t.value; saveTodos(); }
-  }));
+  document.querySelectorAll(".tnotes").forEach(t => {
+    autoGrow(t);
+    t.addEventListener("input", () => {
+      autoGrow(t);
+      const n = t.dataset.name; if (TODOS[n]) { TODOS[n].notes = t.value; saveTodos(); }
+    });
+  });
 }
 
 function afterElement(body, y) {
@@ -645,6 +691,7 @@ function detailHTML(p) {
 function renderRows() {
   const q = searchEl.value.trim().toLowerCase();
   const rows = DATA.filter(p => {
+    if (groupOf(p) !== activeGroup) return false;
     if (activeFilter !== "all" && gitGroup(p) !== activeFilter) return false;
     if (!q) return true;
     return [p.title, p.name, p.summary, p.host, p.contact, p.repo, ...(p.tech || [])]
@@ -667,12 +714,12 @@ function renderRows() {
       ${detailHTML(p)}
     </div>`;
   }).join("") : `<div class="empty">No projects match.</div>`;
-  $("count").textContent = DATA.length;
+  $("count").textContent = DATA.filter(p => groupOf(p) === activeGroup).length;
 }
 
 function renderTally() {
   const counts = { synced: 0, push: 0, pull: 0, attention: 0 };
-  DATA.forEach(p => { const g = gitGroup(p); if (counts[g] !== undefined) counts[g]++; });
+  DATA.filter(p => groupOf(p) === activeGroup).forEach(p => { const g = gitGroup(p); if (counts[g] !== undefined) counts[g]++; });
   const cells = [["synced", "In sync", "var(--live)"], ["push", "Push", "var(--accent)"], ["pull", "Pull", "var(--watch)"], ["attention", "Attention", "var(--down)"]];
   $("tally").innerHTML = cells.map(([k, lab, c]) =>
     `<div class="cell"><div class="num">${counts[k]}</div><div class="lab" style="--c:${c}">${lab}</div></div>`).join("");
@@ -702,6 +749,12 @@ $("filters").addEventListener("click", e => {
   document.querySelectorAll(".filters button").forEach(b => b.classList.toggle("active", b === btn));
   activeFilter = btn.dataset.filter;
   renderRows();
+});
+$("grouptabs").addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  activeGroup = btn.dataset.group;
+  renderGroupTabs(); renderRows(); renderTally();
 });
 searchEl.addEventListener("input", renderRows);
 $("refresh").addEventListener("click", () => reload(true));

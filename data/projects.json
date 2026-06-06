@@ -240,20 +240,6 @@
       "note": "Dependency, not deployed standalone. Not cloned on this machine."
     },
     {
-      "name": "WeZimplify/wez_crm",
-      "title": "WeZimplify CRM",
-      "lifecycle": "live",
-      "handover": "known",
-      "summary": "CRM with support tickets.",
-      "tech": ["PHP 8.4", "MySQL 8", "Vanilla JS"],
-      "url": "",
-      "host": "TBD",
-      "repo": "WeZimplify/wez_crm",
-      "contact": "",
-      "creds": "",
-      "note": "Not cloned on this machine."
-    },
-    {
       "name": "new_agentbuilder",
       "title": "new_agentbuilder",
       "lifecycle": "dormant",

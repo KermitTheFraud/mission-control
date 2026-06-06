@@ -1,0 +1,61 @@
+{
+  "_comment": "Internal WeZimplify product repos (nested under ../wez-internal/). Same shape as projects.json; merged at serve time into the 'internal' group and shown under the Internal tab, separate from customer projects. 'name' must match the repo folder name under wez-internal/ so live git status attaches. Drop a new git repo into wez-internal/ and it shows up here automatically (as a 'review' card until added below).",
+  "projects": [
+    {
+      "name": "wez_crm",
+      "title": "WeZimplify CRM",
+      "lifecycle": "live",
+      "handover": "known",
+      "summary": "CRM with support tickets.",
+      "tech": ["PHP 8.4", "MySQL 8", "Vanilla JS"],
+      "url": "",
+      "host": "TBD",
+      "repo": "WeZimplify/wez_crm",
+      "contact": "",
+      "creds": "",
+      "note": "Internal product - CRM + support tickets."
+    },
+    {
+      "name": "wez-website",
+      "title": "WeZimplify Website",
+      "lifecycle": "live",
+      "handover": "known",
+      "summary": "New WeZimplify website.",
+      "tech": ["HTML", "CSS", "Vanilla JS"],
+      "url": "",
+      "host": "",
+      "repo": "WeZimplify/wez-website",
+      "contact": "",
+      "creds": "",
+      "note": "Static site (index.html + assets/pages/css/js)."
+    },
+    {
+      "name": "wez-docs",
+      "title": "WeZimplify Docs",
+      "lifecycle": "live",
+      "handover": "known",
+      "summary": "Internal documentation & notes.",
+      "tech": ["Docs"],
+      "url": "",
+      "host": "",
+      "repo": "WeZimplify/wez-docs",
+      "contact": "",
+      "creds": "",
+      "note": ""
+    },
+    {
+      "name": "wez-design",
+      "title": "WeZimplify Design System",
+      "lifecycle": "live",
+      "handover": "known",
+      "summary": "Design system - tokens, Geist font, dist build.",
+      "tech": ["Node", "CSS"],
+      "url": "",
+      "host": "",
+      "repo": "WeZimplify/wez-design",
+      "contact": "",
+      "creds": "",
+      "note": "Not a git repo yet - run git init + add a remote + push to get live status."
+    }
+  ]
+}

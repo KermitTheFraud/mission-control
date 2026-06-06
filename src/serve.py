@@ -44,10 +44,12 @@ from urllib.parse import urlparse, parse_qs
 SELF = Path(__file__).resolve()
 HERE = SELF.parent                 # mission-control/src
 ROOT = HERE.parent                 # mission-control
-SCAN_ROOT = ROOT.parent            # the projects root (Github_repos) - repos to scan
+SCAN_ROOT = ROOT.parent            # the projects root (github-repos) - customer repos to scan
 REPO_CHECK = HERE / "repo_check.py"
 INDEX = HERE / "index.html"
-REGISTRY = ROOT / "data" / "projects.json"
+REGISTRY = ROOT / "data" / "projects.json"      # customer projects
+INTERNAL = ROOT / "data" / "internal.json"      # internal WeZimplify product repos
+INTERNAL_DIR = SCAN_ROOT / "wez-internal"       # subfolder the internal repos live in
 TODOS = ROOT / "data" / "todos.json"
 LOGFILE = ROOT / "server.log"
 
@@ -149,12 +151,14 @@ def do_sync() -> dict:
 
 # ---------------------------------------------------------------- data helpers
 
-def load_registry() -> tuple[list, str]:
+def load_registry(path: Path) -> tuple[list, str]:
     try:
-        data = json.loads(REGISTRY.read_text(encoding="utf-8"))
+        data = json.loads(path.read_text(encoding="utf-8"))
         return (data.get("projects", []) if isinstance(data, dict) else data), ""
+    except FileNotFoundError:
+        return [], ""  # an optional registry (e.g. internal.json) simply absent
     except (OSError, json.JSONDecodeError) as e:
-        return [], f"could not read projects.json: {e}"
+        return [], f"could not read {path.name}: {e}"
 
 
 def load_todos() -> dict:
@@ -174,11 +178,11 @@ def save_todos(data: dict) -> None:
     os.replace(tmp, TODOS)
 
 
-def run_repo_check(fetch: bool) -> tuple[list, str, list]:
-    wrapper = "$ python src/repo_check.py --json --root <projects>" + ("" if fetch else " --no-fetch")
+def run_repo_check(fetch: bool, root: Path) -> tuple[list, str, list]:
+    wrapper = f"$ python src/repo_check.py --json --root {root.name}" + ("" if fetch else " --no-fetch")
     if not REPO_CHECK.exists():
         return [], f"repo_check.py not found at {REPO_CHECK}", [wrapper]
-    cmd = [sys.executable, str(REPO_CHECK), "--json", "--log", "--root", str(SCAN_ROOT)]
+    cmd = [sys.executable, str(REPO_CHECK), "--json", "--log", "--root", str(root)]
     if not fetch:
         cmd.append("--no-fetch")
     try:
@@ -197,30 +201,47 @@ def run_repo_check(fetch: bool) -> tuple[list, str, list]:
         return [], "repo_check.py did not return JSON: " + (tail[-1] if tail else "?"), log_lines
 
 
-def build_payload(fetch: bool) -> dict:
-    registry, reg_error = load_registry()
-    live, live_error, log_lines = run_repo_check(fetch)
+def merge_group(registry_path: Path, scan_root: Path, group: str,
+                fetch: bool) -> tuple[list, list, list]:
+    """Build the project list for one group (customer / internal): registry
+    entries with live git merged in, plus any scanned repo not yet in the
+    registry as a loose 'review' card. Returns (projects, errors, log_lines).
+    A loose repo stays inside its own group, so internal repos never leak into
+    the customer list (or vice versa)."""
+    registry, reg_error = load_registry(registry_path)
+    errors = [reg_error] if reg_error else []
+    live, log_lines = [], []
+    if scan_root.exists():
+        live, live_error, log_lines = run_repo_check(fetch, scan_root)
+        if live_error:
+            errors.append(live_error)
     live_by_name = {r.get("name"): r for r in live}
 
     projects, seen = [], set()
     for p in registry:
         seen.add(p.get("name"))
-        projects.append({**p, "git": live_by_name.get(p.get("name"))})
+        projects.append({**p, "group": group, "git": live_by_name.get(p.get("name"))})
     for name, r in live_by_name.items():
         if name not in seen:
             projects.append({
                 "name": name, "title": name, "lifecycle": "", "handover": "review",
                 "summary": "Tracked by repo_check but not in the registry yet.",
                 "tech": [], "url": "", "host": "", "repo": name,
-                "contact": "", "creds": "", "note": "", "git": r,
+                "contact": "", "creds": "", "note": "", "group": group, "git": r,
             })
+    return projects, errors, log_lines
+
+
+def build_payload(fetch: bool) -> dict:
+    cust, cust_err, cust_log = merge_group(REGISTRY, SCAN_ROOT, "customer", fetch)
+    intern, int_err, int_log = merge_group(INTERNAL, INTERNAL_DIR, "internal", fetch)
 
     return {
-        "projects": projects,
+        "projects": cust + intern,
         "scanned_at": datetime.now().isoformat(timespec="seconds"),
         "fetched": fetch,
-        "log": log_lines,
-        "error": "; ".join(e for e in (reg_error, live_error) if e),
+        "log": cust_log + int_log,
+        "error": "; ".join(e for e in (cust_err + int_err) if e),
     }
 
 

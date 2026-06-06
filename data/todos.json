@@ -7,7 +7,7 @@
   "mission-control": {
     "lane": "later",
     "rank": 0,
-    "notes": "1. Should refresh have a tmp dialog that says how it refreshes?\n2. When I write in a box or card like this, it should auto expand so all the text can be seen, or maybe at least 5-6 lines can be seen before needing to scroll\n3. MacOS doesn't say the version name ie Tahoe. It should\n\n\n\n\n\n\n\n\n\n\n\n\n"
+    "notes": "1. Should refresh have a tmp dialog that says how it refreshes?\n2. When I write in a box or card like this, it should auto expand so all the text can be seen, or maybe at least 5-6 lines can be seen before needing to scroll\n3. MacOS doesn't say the version name ie Tahoe. It should."
   },
   "trusted": {
     "notes": "HubSpot API test, ordre data analyse og send til Michael",

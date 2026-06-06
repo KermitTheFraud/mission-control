@@ -16,7 +16,7 @@ Or the launcher in the repo root:  mission-control.cmd  (starts it detached)
 
 Flags:
     --no-open    don't open a browser (used by Restart so it reuses your tab)
-    --detached   redirect output to server.log (used when launched windowless)
+    --detached   redirect output to logs/server.log (used when launched windowless)
 
 Running the launcher when a server is already up just opens the browser - it
 never starts a second one. On a fresh start it git-pulls the mission-control
@@ -51,7 +51,7 @@ REGISTRY = ROOT / "data" / "projects.json"      # customer projects
 INTERNAL = ROOT / "data" / "internal.json"      # internal WeZimplify product repos
 INTERNAL_DIR = SCAN_ROOT / "wez-internal"       # subfolder the internal repos live in
 TODOS = ROOT / "data" / "todos.json"
-LOGFILE = ROOT / "server.log"
+LOGFILE = ROOT / "logs" / "server.log"
 
 HOST = "127.0.0.1"
 PORT = 8787
@@ -72,11 +72,12 @@ def log(msg: str) -> None:
 
 def setup_output(detached: bool) -> None:
     """When detached (or windowless via pythonw, where the std streams are None),
-    send all output to server.log for debugging and an audit trail."""
+    send all output to logs/server.log for debugging and an audit trail."""
     global DETACHED
     DETACHED = detached
     if detached or sys.stdout is None or sys.stderr is None:
         try:
+            LOGFILE.parent.mkdir(parents=True, exist_ok=True)
             f = open(LOGFILE, "a", encoding="utf-8", buffering=1)
             sys.stdout = f
             sys.stderr = f
@@ -416,10 +417,10 @@ def main() -> int:
 
     existing = probe_existing()
     if existing:
-        log(f"already running -> {existing} (opening browser)" if not no_open
-            else f"already running -> {existing}")
-        if not no_open:
-            webbrowser.open(existing)
+        # Already up: never open a second tab - the launcher tells the user to
+        # use the tab they already have, and the in-page BroadcastChannel guards
+        # against duplicate browser tabs.
+        log(f"already running -> {existing} (use your open tab)")
         return 0
 
     log(f"startup: {pull_if_clean()}")

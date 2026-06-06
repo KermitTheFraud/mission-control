@@ -99,6 +99,8 @@
   .strip .n { color: var(--muted); }
   .sect-left { color: var(--muted); flex-shrink: 1; }
   .sect-left .l2 { color: var(--faint); }
+  #os-name { font-weight: 600; color: var(--fg); }   /* OS name reads bold + dark */
+  #os-detail { color: var(--faint); }                /* version stays muted */
   .sect-mid { flex: 1 1 auto; justify-content: flex-start; }
   .sect-right { align-items: flex-end; flex-shrink: 0; text-align: right; padding-right: 0; gap: 6px; }
   .sect-right .l3 { font-size: 11px; }
@@ -111,7 +113,7 @@
   @keyframes pulse { 0%,100% { box-shadow: 0 0 9px var(--live); } 50% { box-shadow: 0 0 2px var(--live); } }
 
   /* ---------- Self-backlog widget (masthead middle) ---------- */
-  .selfbox { width: 100%; border: 1px solid color-mix(in srgb, var(--magenta) 38%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--magenta) 7%, var(--panel)); overflow: hidden; }
+  .selfbox { position: relative; width: 100%; border: 1px solid color-mix(in srgb, var(--magenta) 38%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--magenta) 7%, var(--panel)); }
   .selfbox-head { display: flex; align-items: center; gap: 9px; padding: 8px 12px; cursor: pointer; user-select: none; }
   .selfbox-head .sb-title { font-family: "Archivo", sans-serif; font-weight: 700; font-size: 12.5px; color: var(--fg); white-space: nowrap; }
   .selfbox-head .sb-count { font-size: 11px; color: var(--faint); white-space: nowrap; }
@@ -121,7 +123,8 @@
   .sb-tool.on { color: var(--magenta); }
   .sb-chev { color: var(--muted); font-size: 11px; transition: transform .15s; }
   .selfbox.open .sb-chev { transform: rotate(180deg); }
-  .selfbox-body { display: none; padding: 0 12px 10px; }
+  /* dropdown popover: opens within the middle column, never changes strip height */
+  .selfbox-body { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--magenta) 38%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--magenta) 6%, var(--panel)); box-shadow: 0 18px 44px -18px rgba(0,0,0,0.6); }
   .selfbox.open .selfbox-body { display: block; }
   .sb-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.45; padding: 3px 0; color: var(--fg); }
   .sb-item .box { flex-shrink: 0; font-family: "IBM Plex Mono", monospace; color: var(--magenta); }
@@ -151,20 +154,39 @@
   .syncbar .btn.sync:hover { filter: brightness(1.08); }
 
   /* ---------- TODO board ---------- */
-  .section-head { display: flex; align-items: baseline; gap: 12px; margin: 30px 0 14px; }
+  .section-head { display: flex; align-items: baseline; gap: 12px; margin: 30px 0 14px; cursor: pointer; user-select: none; }
   .section-head h2 { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 0.04em; text-transform: uppercase; }
   .section-head .hint { font-size: 11px; color: var(--faint); }
+  .section-head .board-chev { margin-left: auto; color: var(--muted); font-size: 13px; line-height: 1; transition: transform .15s; }
+  .section-head.collapsed .board-chev { transform: rotate(-90deg); }
+  .board.collapsed { display: none; }
 
   .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
   .lane { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
   .lane-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--line); border-top: 2px solid var(--lc); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lc); }
   .lane-head .lane-count { color: var(--faint); font-size: 11px; }
-  .lane-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 80px; transition: background .12s; }
+  .lane-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 80px; max-height: 360px; overflow-y: auto; transition: background .12s; }
   .lane-body.dragover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
   .lane-empty { color: var(--faint); font-size: 11.5px; text-align: center; padding: 18px 6px; border: 1px dashed var(--line); border-radius: 9px; }
 
-  .tcard { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .tcard { position: relative; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
   .tcard.dragging { opacity: .35; }
+  .tcard.blocked { opacity: .62; }
+  /* edge hover-arrows: shift a card to the adjacent lane (appended at the bottom) */
+  .tmove { position: absolute; top: 50%; transform: translateY(-50%); height: 42px; width: 20px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s, color .12s, background .12s; z-index: 3; border-radius: 7px; }
+  .tcard:hover .tmove { opacity: .85; }
+  .tmove:hover { opacity: 1; color: var(--fg); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  .tmove.l { left: 2px; } .tmove.r { right: 2px; }
+  .tmove svg { display: block; }
+  /* priority signal-bars (NEXT lane only) */
+  .tbars { flex-shrink: 0; display: inline-flex; align-items: center; }
+  .tbars svg { display: block; }
+  /* blocked / waiting toggle + badge */
+  .tblock { background: none; border: none; color: var(--faint); cursor: pointer; padding: 0 2px; flex-shrink: 0; display: inline-flex; align-items: center; line-height: 1; }
+  .tblock:hover { color: var(--fg); }
+  .tblock.on { color: var(--watch); }
+  .tblock svg { display: block; fill: currentColor; }
+  .waitbadge { font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 999px; padding: 2px 6px; flex-shrink: 0; color: var(--watch); border: 1px solid color-mix(in srgb, var(--watch) 45%, var(--line)); }
   .tcard-head { display: flex; align-items: center; gap: 9px; padding: 9px 11px; cursor: grab; }
   .tcard-head:active { cursor: grabbing; }
   .tnum { width: 20px; height: 20px; flex-shrink: 0; border-radius: 5px; background: var(--bg); border: 1px solid var(--line); color: var(--lc); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
@@ -290,6 +312,8 @@
   .term-body .tl.ok { color: #45d98a; margin-top: 7px; }
   .term-body .tl.err { color: #fb5e6b; margin-top: 7px; }
   .term-body .cursor { color: #45d98a; animation: blink 1s steps(1) infinite; }
+  .term-body .spinner { color: #45d98a; }
+  .term-body .elapsed { color: #6a7180; }
   @keyframes blink { 50% { opacity: 0; } }
 
   /* ---------- Kill & Close: "safe to close" overlay ---------- */
@@ -344,9 +368,10 @@
     <button class="btn sync" id="sync-btn">Sync ↑</button>
   </div>
 
-  <div class="section-head">
+  <div class="section-head" id="board-head">
     <h2>TODO Board</h2>
-    <span class="hint">drag cards between lanes &amp; reorder to set priority · notes autosave</span>
+    <span class="hint">drag n' drop · reorder priority · notes are autosaved:))</span>
+    <span class="board-chev" id="board-chev">⌄</span>
   </div>
   <div class="board" id="board"></div>
 
@@ -398,6 +423,14 @@
   </div>
 </div>
 
+<div class="killed-overlay" id="dup">
+  <div class="killed-box">
+    <div class="killed-title">already open elsewhere</div>
+    <div class="killed-sub">mission-control is already open in another tab. This one won't run, so the two can't fight over board edits. Switch to your other tab — or close it, then reload here.</div>
+    <div class="killed-sync"><button class="btn" id="dup-reload">Reload this tab</button></div>
+  </div>
+</div>
+
 <script>
 const GIT = {
   "IN SYNC":     { label: "in sync",     c: "var(--live)",    g: "●" },
@@ -418,8 +451,7 @@ const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt
 const $ = id => document.getElementById(id);
 
 let DATA = [], BYNAME = {}, TODOS = {}, STATUS = null, CONN = "connecting", activeFilter = "all", activeGroup = "customer", DRAG = null;
-let selfboxOpen = false, selfboxEdit = false;
-try { selfboxOpen = localStorage.getItem("mc-selfbox") === "1"; } catch (e) {}
+let selfboxOpen = false, selfboxEdit = false;   // backlog always boots collapsed
 const rowsEl = $("rows"), searchEl = $("search");
 
 function gitMeta(p) { return (p && p.git && GIT[p.git.status]) || NOLIVE; }
@@ -455,16 +487,27 @@ $("theme-toggle").addEventListener("click", () => {
 
 /* ---------------- loading terminal ---------------- */
 const term = $("term"), termBody = $("term-body");
-let termTimer = null, termExplain = "";
-function termShow(headline, explain) {
-  clearTimeout(termTimer);
+let termTimer = null, termExplain = "", termSpin = null;
+const BRAILLE = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
+function termShow(headline, explain, busyLabel) {
+  clearTimeout(termTimer); clearInterval(termSpin);
   termExplain = explain || "";
   term.classList.add("show");
-  termBody.innerHTML = `<div class="tl run">${esc(headline)} <span class="cursor">▋</span></div>`
-    + (termExplain ? `<div class="tl note">${esc(termExplain)}</div>` : "");
+  termBody.innerHTML = `<div class="tl run">${esc(headline)}</div>`
+    + (termExplain ? `<div class="tl note">${esc(termExplain)}</div>` : "")
+    + `<div class="tl run" id="term-spin"></div>`;
+  // braille spinner + elapsed timer so a slow git fetch never looks frozen
+  const spinEl = $("term-spin"), t0 = performance.now(), label = busyLabel || "working";
+  let f = 0;
+  const paint = () => {
+    const secs = ((performance.now() - t0) / 1000).toFixed(1);
+    spinEl.innerHTML = `<span class="spinner">${BRAILLE[f++ % BRAILLE.length]}</span> ${esc(label)} <span class="elapsed">${secs}s</span>`;
+  };
+  paint();
+  termSpin = setInterval(paint, 90);
 }
 function termFinish(log, summary, isErr) {
-  clearTimeout(termTimer);
+  clearTimeout(termTimer); clearInterval(termSpin);
   const lines = (log && log.length) ? log : ["(no command log)"];
   termBody.innerHTML = termExplain ? `<div class="tl note">${esc(termExplain)}</div>` : "";
   const per = Math.max(6, Math.min(34, Math.floor(700 / lines.length)));
@@ -499,7 +542,7 @@ function termFinish(log, summary, isErr) {
     }
   })();
 }
-function termHide() { term.classList.remove("show"); }
+function termHide() { clearInterval(termSpin); term.classList.remove("show"); }
 document.addEventListener("keydown", e => { if (e.key === "Escape") termHide(); });
 
 /* ---------------- connection state ---------------- */
@@ -569,7 +612,14 @@ async function killAndClose() {
     $("killed").classList.add("show");
   }, 400);
 }
+let syncHold = 0, syncHoldMsg = "";
 function renderSyncBanner() {
+  // after a Sync, hold the success message on screen ~1.5s before the poll clears it
+  if (syncHold && Date.now() < syncHold) {
+    $("syncbar").classList.add("show");
+    $("sync-text").textContent = syncHoldMsg;
+    return;
+  }
   const repo = (STATUS && STATUS.repo) || {};
   const show = CONN === "online" && (repo.todos_dirty || repo.ahead > 0);
   $("syncbar").classList.toggle("show", !!show);
@@ -582,6 +632,7 @@ function renderSyncBanner() {
 }
 
 async function pollStatus() {
+  if (blockedByOther) return;
   if (location.protocol === "file:") { setConn("file"); renderServer(); return; }
   try {
     const r = await fetch("/api/status", { cache: "no-store" });
@@ -605,11 +656,13 @@ async function loadTodos() {
 async function loadProjects(fetchRemotes) {
   $("refresh").classList.add("spin"); $("refresh").disabled = true;
   $("refresh-label").textContent = fetchRemotes ? "Fetching…" : "Scanning…";
+  const nRepos = DATA.filter(p => p.git).length || DATA.length;
   termShow(
     fetchRemotes ? "$ scanning projects + fetching remotes…" : "$ scanning projects (local refs)…",
     fetchRemotes
       ? "Refresh runs git fetch on every repo, then compares each against its upstream — recomputing ahead / behind / dirty and the last commit for every project."
-      : "Reading local git refs only (no network) — status is recomputed from already-fetched data."
+      : "Reading local git refs only (no network) — status is recomputed from already-fetched data.",
+    fetchRemotes ? `git fetch × ${nRepos || "?"} repos — network-bound` : "reading local refs"
   );
   const t0 = performance.now();
   try {
@@ -647,7 +700,11 @@ function saveTodos(immediate) {
 function laneItems(lane) {
   return Object.keys(TODOS)
     .filter(n => n !== SELF_NAME && TODOS[n] && TODOS[n].lane === lane)
-    .sort((a, b) => (TODOS[a].rank ?? 0) - (TODOS[b].rank ?? 0));
+    .sort((a, b) => {
+      const ba = TODOS[a].blocked ? 1 : 0, bb = TODOS[b].blocked ? 1 : 0;
+      if (ba !== bb) return ba - bb;            // blocked cards sink to the bottom
+      return (TODOS[a].rank ?? 0) - (TODOS[b].rank ?? 0);
+    });
 }
 
 /* ---------------- render ---------------- */
@@ -731,6 +788,13 @@ function renderSelfBacklog() {
     renderSelfBacklog();
     if (selfboxEdit) { const t = $("sb-edit"); if (t) t.focus(); }
   });
+  const bodyEl = box.querySelector(".selfbox-body");
+  if (bodyEl) bodyEl.addEventListener("dblclick", () => {
+    if (selfboxEdit) return;
+    selfboxEdit = true; selfboxOpen = true;
+    renderSelfBacklog();
+    const t = $("sb-edit"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); }
+  });
   const ed = $("sb-edit");
   if (ed) ed.addEventListener("input", () => {
     if (!TODOS[SELF_NAME]) TODOS[SELF_NAME] = {};
@@ -741,23 +805,58 @@ function renderSelfBacklog() {
   });
 }
 
+/* ---------------- board cards ---------------- */
+const LANE_ORDER = ["now", "next", "later"];
+const CHEV_L = `<svg width="9" height="14" viewBox="0 0 9 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 1 L2 7 L6.5 13"/></svg>`;
+const CHEV_R = `<svg width="9" height="14" viewBox="0 0 9 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 1 L7 7 L2.5 13"/></svg>`;
+const ICON_PAUSE = `<svg width="11" height="11" viewBox="0 0 12 12"><rect x="2" y="1.5" width="3" height="9" rx="1"/><rect x="7" y="1.5" width="3" height="9" rx="1"/></svg>`;
+const ICON_PLAY  = `<svg width="11" height="11" viewBox="0 0 12 12"><path d="M3 1.5 L10 6 L3 10.5 Z"/></svg>`;
+/* signal-bars: urgency by priority slot (NEXT lane only). slot 0 = 3 lit, 1 = 2, ≥2 = 1, ≥3 faint */
+function signalBars(i) {
+  const lit = i === 0 ? 3 : i === 1 ? 2 : 1;
+  const bar = (idx, x, y, h) =>
+    `<rect x="${x}" y="${y}" width="3" height="${h}" rx="1" fill="${idx < lit ? "var(--next)" : "var(--line)"}"/>`;
+  return `<span class="tbars" title="priority ${i + 1}"${i >= 3 ? ` style="opacity:.5"` : ""}>`
+    + `<svg width="15" height="13" viewBox="0 0 15 13" aria-hidden="true">`
+    + bar(0, 0, 8, 5) + bar(1, 6, 4, 9) + bar(2, 11, 0, 13)
+    + `</svg></span>`;
+}
+/* edge arrows move a card one lane over, appended at the destination bottom */
+function moveLane(name, dir) {
+  const t = TODOS[name]; if (!t) return;
+  const i = LANE_ORDER.indexOf(t.lane), j = i + dir;
+  if (i < 0 || j < 0 || j >= LANE_ORDER.length) return;
+  const dest = LANE_ORDER[j];
+  const bottom = laneItems(dest).length;   // count before the move
+  t.lane = dest; t.rank = bottom;
+  saveTodos(true); renderBoard(); renderRows();
+}
+
 function renderBoard() {
   $("board").innerHTML = LANES.map(([lane, label]) => {
     const names = laneItems(lane);
     const cards = names.map((n, i) => {
       const p = BYNAME[n] || { title: n, name: n };
       const m = gitMeta(p);
-      const notes = TODOS[n].notes || "";
+      const t = TODOS[n] || {};
+      const notes = t.notes || "";
       const isInternal = groupOf(p) === "internal";
-      return `<div class="tcard" data-name="${esc(n)}">
+      const blocked = !!t.blocked;
+      const bars = (lane === "next" && !blocked) ? signalBars(i) : "";
+      return `<div class="tcard${blocked ? " blocked" : ""}" data-name="${esc(n)}">
+        ${lane !== "now"   ? `<button class="tmove l" data-name="${esc(n)}" data-dir="-1" title="Move toward Now">${CHEV_L}</button>` : ""}
+        ${lane !== "later" ? `<button class="tmove r" data-name="${esc(n)}" data-dir="1" title="Move toward Later">${CHEV_R}</button>` : ""}
         <div class="tcard-head" draggable="true">
           <span class="tnum">${i + 1}</span>
           <span class="ttitle" title="${esc(p.title || n)}">${esc(p.title || n)}</span>
+          ${blocked ? `<span class="waitbadge">waiting</span>` : ""}
           ${isInternal ? `<span class="inttag" title="Internal WeZimplify tool">internal</span>` : ""}
+          ${bars}
+          <button class="tblock${blocked ? " on" : ""}" data-name="${esc(n)}" title="${blocked ? "Blocked — click to resume" : "Mark blocked / waiting"}">${blocked ? ICON_PLAY : ICON_PAUSE}</button>
           <span class="tstat" style="color:${m.c}" title="${esc(p.git ? p.git.status : "no scan")}">${m.g}</span>
           <button class="tremove" data-name="${esc(n)}" title="Remove from board">✕</button>
         </div>
-        <textarea class="tnotes" data-name="${esc(n)}" placeholder="what to work on…">${esc(notes)}</textarea>
+        <textarea class="tnotes" data-name="${esc(n)}" placeholder="${blocked ? "what's it waiting on…" : "what to work on…"}">${esc(notes)}</textarea>
         <button class="texpand" data-name="${esc(n)}" hidden></button>
       </div>`;
     }).join("");
@@ -782,6 +881,14 @@ function wireBoard() {
   });
   document.querySelectorAll(".tremove").forEach(b => b.addEventListener("click", e => {
     e.stopPropagation(); delete TODOS[b.dataset.name]; saveTodos(true); renderBoard(); renderRows();
+  }));
+  document.querySelectorAll(".tmove").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation(); moveLane(b.dataset.name, parseInt(b.dataset.dir, 10));
+  }));
+  document.querySelectorAll(".tblock").forEach(b => b.addEventListener("click", e => {
+    e.stopPropagation();
+    const n = b.dataset.name;
+    if (TODOS[n]) { TODOS[n].blocked = !TODOS[n].blocked; saveTodos(true); renderBoard(); renderRows(); }
   }));
   document.querySelectorAll(".tnotes").forEach(t => {
     const n = t.dataset.name;
@@ -943,18 +1050,61 @@ searchEl.addEventListener("input", renderRows);
 $("refresh").addEventListener("click", () => reload(true));
 $("sync-btn").addEventListener("click", async () => {
   $("sync-btn").disabled = true; $("sync-btn").textContent = "Syncing…";
+  let msg = "sync failed";
   try {
     const r = await (await fetch("/api/sync", { method: "POST" })).json();
-    $("sync-text").textContent = r.message || (r.ok ? "synced" : "sync failed");
-  } catch (e) { $("sync-text").textContent = "sync failed"; }
+    msg = r.message || (r.ok ? "synced" : "sync failed");
+  } catch (e) { msg = "sync failed"; }
+  $("sync-text").textContent = msg;
   $("sync-btn").disabled = false; $("sync-btn").textContent = "Sync ↑";
-  setTimeout(pollStatus, 400);
+  // keep the result on screen ~1.5s longer before the poll clears the banner
+  syncHold = Date.now() + 1500; syncHoldMsg = msg;
+  setTimeout(() => { syncHold = 0; pollStatus(); }, 1500);
+  pollStatus();
 });
 
+/* ---------------- board collapse ---------------- */
+$("board-head").addEventListener("click", () => {
+  const collapsed = $("board").classList.toggle("collapsed");
+  $("board-head").classList.toggle("collapsed", collapsed);
+});
+
+/* ---------------- single-session guard (one live tab) ---------------- */
+let mcChan = null, blockedByOther = false, pollTimer = null;
+const MC_ID = Date.now() + ":" + Math.random().toString(36).slice(2);
+function cmpId(a, b) {
+  const na = parseInt(a, 10), nb = parseInt(b, 10);
+  if (na !== nb) return na - nb;
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+function showBlocked() {
+  if (blockedByOther) return;
+  blockedByOther = true;
+  clearInterval(pollTimer);
+  termHide();
+  $("dup").classList.add("show");
+}
+function initSessionGuard() {
+  if (!("BroadcastChannel" in window)) return;
+  try { mcChan = new BroadcastChannel("mc"); } catch (e) { return; }
+  mcChan.onmessage = e => {
+    const m = e.data || {};
+    if (m.t === "ping") {
+      mcChan.postMessage({ t: "here", id: MC_ID });   // tell the newcomer we're live
+      if (cmpId(m.id, MC_ID) < 0) showBlocked();       // …but an older tab outranks us
+    } else if (m.t === "here" && cmpId(m.id, MC_ID) < 0) {
+      showBlocked();                                    // an older tab already owns the session
+    }
+  };
+  mcChan.postMessage({ t: "ping", id: MC_ID });
+}
+$("dup-reload").addEventListener("click", () => location.reload());
+
 /* ---------------- boot ---------------- */
+initSessionGuard();
 renderServer();
 pollStatus();
-setInterval(pollStatus, 5000);
+pollTimer = setInterval(pollStatus, 5000);
 </script>
 </body>
 </html>

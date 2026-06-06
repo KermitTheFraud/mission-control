@@ -7,7 +7,7 @@
   "mission-control": {
     "lane": "later",
     "rank": 0,
-    "notes": "- [x] refresh: how-it-refreshes info (ⓘ tooltip)\n- [x] notes auto-grow (cap ~6 lines + expand/collapse)\n- [x] macOS version name (Tahoe)\n- [ ] FTP-drift column — repo_check --ftp → /api/projects?ftp=1\n- [ ] filters: lifecycle (live/watch/dormant/down) + handover\n- [ ] fill real contact + creds per project\n- [ ] wez-design: git init + remote + push (leaves \"no scan\")\n- [ ] cross-machine: apply github-repos + wez-internal renames on Omarchy + Windows\n- [ ] verify launcher auto-close + Kill & Close (window.close) in Brave\n- [ ] currently kmrustfri is blocked or awaiting respose from stakeholders. Add a button on the card to set it in \"blocked/waiting\" mode? Consider best approach here"
+    "notes": "- [x] refresh: how-it-refreshes info (ⓘ tooltip)\n- [x] notes auto-grow (cap ~6 lines + expand/collapse)\n- [x] macOS version name (Tahoe)\n- [ ] FTP-drift column — repo_check --ftp → /api/projects?ftp=1\n- [ ] filters: lifecycle (live/watch/dormant/down) + handover\n- [ ] fill real contact + creds per project\n- [ ] wez-design: git init + remote + push (leaves \"no scan\")\n- [ ] cross-machine: apply github-repos + wez-internal renames on Omarchy + Windows\n- [ ] verify launcher auto-close + Kill & Close (window.close) in Brave\n- [x] currently kmrustfri is blocked or awaiting respose from stakeholders. Add a button on the card to set it in \"blocked/waiting\" mode? Consider best approach here\n- [x] board pass: backlog collapsed by default\n- [x] board pass: lanes cap ~3 cards + scroll\n- [x] board pass: priority signal-bars (NEXT only)\n- [x] board pass: edge hover-arrows move card one lane\n- [x] board pass: block 2nd session (launcher probe + BroadcastChannel)\n- [x] board pass: OS name bold + darker\n- [x] board pass: double-click backlog to edit\n- [x] board pass: blocked/waiting card mode\n- [x] board pass: sync notification persists +1.5s\n- [x] board pass: terminal braille spinner + elapsed + git-fetch×N\n- [x] board pass: backlog expands in place (popover)\n- [x] board pass: collapse TODO board from its header\n- [x] board pass: server.log moved to logs/"
   },
   "trusted": {
     "notes": "HubSpot API test, ordre data analyse og send til Michael",
@@ -21,7 +21,7 @@
   },
   "kmrustfri": {
     "lane": "next",
-    "rank": 5,
+    "rank": 6,
     "notes": "Afventer svar fra Jeppe og Mads. Vi mangler PAK til Monitor"
   },
   "launis-ai.dk": {
@@ -41,7 +41,7 @@
   },
   "stennevad-ai.dk": {
     "lane": "next",
-    "rank": 6,
+    "rank": 4,
     "notes": "Undersøg excel issue og fix"
   },
   "targarno-ai.dk": {
@@ -51,7 +51,12 @@
   },
   "dmr_lab": {
     "lane": "next",
-    "rank": 4,
+    "rank": 5,
     "notes": "Der er to lab mapper?"
+  },
+  "wez-website": {
+    "lane": "now",
+    "rank": 0,
+    "notes": "Update new website with feedback fra Morten og Sara"
   }
 }

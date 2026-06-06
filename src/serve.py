@@ -260,7 +260,16 @@ def detect_os() -> dict:
         release, version, *_ = platform.win32_ver()
         info = {"name": f"Windows {release}".strip(), "detail": version}
     elif sysname == "Darwin":
-        info = {"name": "macOS", "detail": platform.mac_ver()[0]}
+        ver = platform.mac_ver()[0]              # e.g. "26.3.1"
+        # The marketing codename isn't exposed by Python or sw_vers - map it
+        # from the major version. Update this each fall when Apple ships a name.
+        names = {26: "Tahoe", 15: "Sequoia", 14: "Sonoma",
+                 13: "Ventura", 12: "Monterey", 11: "Big Sur"}
+        try:
+            codename = names.get(int(ver.split(".")[0]))
+        except (ValueError, IndexError):
+            codename = None
+        info = {"name": f"macOS {codename}" if codename else "macOS", "detail": ver}
     elif sysname == "Linux":
         info = None
         omarchy = shutil.which("omarchy")

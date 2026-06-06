@@ -30,17 +30,24 @@ its registry stays inside its own group, so internal repos never leak into the c
 ## Self-backlog convention
 
 **The `mission-control` entry in [`data/todos.json`](data/todos.json) is this dashboard's
-own dev backlog.** Its `notes` are a numbered list of improvements to make to
-mission-control itself (kept here so they sync across machines and stay editable from the
-board UI — that card is styled distinctly from customer cards to make this obvious).
+own dev backlog**, surfaced as a collapsible **checklist in the masthead** (middle column),
+not as a board lane card. Its `notes` are one item per line using markdown checkboxes —
+`- [ ]` open, `- [x]` done — stored as a plain string so they still sync across machines and
+stay editable (the ✎ toggle in the widget reveals a raw textarea).
 
-When working on mission-control:
+Any agent (Claude Code or otherwise) working on mission-control should:
 
-1. **Read** the `mission-control` card's `notes` first — treat them as the task list.
-2. **Plan** the items, get the user's approval, then implement.
-3. **Ask before clearing.** After the noted items are implemented and the user has eyeballed
-   them, ask the user to confirm, then blank the card's `notes` so it's fresh for the next round.
-   Never clear notes that haven't been implemented and confirmed.
+1. **Read the checklist first** — the `- [ ]` items are the task list. Proactively propose a
+   plan for the open ones.
+2. **Plan + get approval**, then implement.
+3. **Tick items off.** As you implement an item, change its line in `data/todos.json` from
+   `- [ ]` to `- [x]` — the checkboxes are read-only in the UI, only an agent crosses them off.
+   Completed items render greyed + struck.
+4. **The user clears them.** Don't delete items yourself; once everything is `- [x]` and the
+   user is satisfied, they remove the completed lines. The widget is collapse-only / not removable.
+
+Mind the autosave race: the running server rewrites `data/todos.json` on every board edit, so
+only edit that file when the board is idle (or stop the server first).
 
 ## Gotchas
 

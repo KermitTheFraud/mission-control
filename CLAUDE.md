@@ -6,8 +6,8 @@ the same three machines (Windows, macOS, Omarchy). No third-party deps — Pytho
 
 ## Run
 
-- `mission-control.cmd` (Windows) / `mission-control.command` (Mac/Linux double-click)
-  / `./mission-control.cmd` (terminal) — all start `src/serve.py --detached` and open
+- `mc-windows.cmd` (Windows) / `mc-unix.command` (macOS/Linux double-click, or
+  `./mc-unix.command` in a terminal) — start `src/serve.py --detached` and open
   `http://127.0.0.1:8787`. Re-running just reopens the tab; it never starts a second server.
 - Always open the page **through the server**, never `file://` (a file page can't reach the API).
 
@@ -26,6 +26,24 @@ Projects are split into two groups — **customer** (top-level repos in the proj
 **internal** (repos under the sibling `../wez-internal/` folder) — shown on Customers / Internal
 tabs. `serve.py` scans each separately and tags every project with a `group`; a loose repo not in
 its registry stays inside its own group, so internal repos never leak into the customer list.
+
+## Data flow / API map
+
+The browser is dumb; `serve.py` does the work. Endpoints (all under `http://127.0.0.1:8787`):
+
+| Method + path | Handler in `serve.py` | What it returns / does |
+|---------------|-----------------------|------------------------|
+| `GET /` | `do_GET` → reads `index.html` | The whole UI. |
+| `GET /api/projects?fetch=0\|1` | `build_payload` → `merge_group` ×2 → `run_repo_check` | Registry (`projects.json` + `internal.json`) merged with live git from `repo_check.py`. `fetch=0` skips network `git fetch`. |
+| `GET /api/status` | `status_payload` → `repo_state` + `detect_os` | Server pid/port/uptime, this repo's git state, OS, git email. |
+| `GET /api/todos` | `load_todos` | The Now/Next/Later board (`data/todos.json`). |
+| `POST /api/todos` | `save_todos` | Replaces the board (body = full JSON object). Writes LF. |
+| `POST /api/sync` | `do_sync` | `git add/commit/push data/todos.json`. |
+| `POST /api/backlog/archive` | `archive_backlog` | Moves finished backlog lines to `data/backlog-archive.json`. |
+| `POST /api/shutdown` / `POST /api/restart` | threaded | Stop / re-exec the server (restart reuses your tab). |
+
+The one path worth holding in your head:
+**browser → `GET /api/projects` → `serve.py:build_payload()` → `merge_group()` runs `repo_check.py` (live git) and merges it over the static `data/*.json` registries → JSON back to the page.** A repo found by the scan but absent from the registry shows up as a loose "review" card in its own group.
 
 ## Self-backlog convention
 

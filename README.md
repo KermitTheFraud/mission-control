@@ -10,15 +10,15 @@ Local dashboard for every project in the projects root (`github-repos/`) — **c
 ## Run
 
 ```bash
-mission-control.cmd          # Windows (double-click or run it)
-mission-control.command      # macOS / Linux (double-click in Finder)
-./mission-control.cmd        # macOS / Linux / Omarchy (terminal)
+mc-windows.cmd               # Windows (double-click or run it)
+mc-unix.command              # macOS / Linux (double-click in Finder)
+./mc-unix.command            # macOS / Linux / Omarchy (terminal)
 # or directly:
 python  src/serve.py         # Windows
 python3 src/serve.py         # macOS / Linux / Omarchy
 ```
 
-`mission-control.command` is the double-clickable Mac/Linux launcher — it just delegates to `mission-control.cmd`. For a one-click Dock icon, drag it onto the Dock (documents side) and set a custom icon via **Finder → Get Info → paste an image onto the icon**. The Terminal window it opens can auto-close via **Terminal → Settings → Profiles → Shell → "When the shell exits: Close if the shell exited cleanly"**.
+`mc-unix.command` is the double-clickable Mac/Linux launcher (`mc-windows.cmd` is the Windows one). For a one-click Dock icon, drag it onto the Dock (documents side) and set a custom icon via **Finder → Get Info → paste an image onto the icon**. The Terminal window it opens can auto-close via **Terminal → Settings → Profiles → Shell → "When the shell exits: Close if the shell exited cleanly"**.
 
 A browser opens at `http://127.0.0.1:8787`. No dependencies — Python 3.8+ and git on PATH. Open the page **through the server** (the localhost URL), not by double-clicking `index.html` — a `file://` page can't reach the API.
 
@@ -32,8 +32,8 @@ A browser opens at `http://127.0.0.1:8787`. No dependencies — Python 3.8+ and 
 
 ```
 mission-control/
-├── mission-control.cmd       # Windows + Unix launcher (sh/batch polyglot)
-├── mission-control.command   # Mac/Linux double-click launcher (delegates to .cmd)
+├── mc-windows.cmd            # Windows launcher (batch)
+├── mc-unix.command           # macOS / Linux launcher (sh, double-clickable)
 ├── CLAUDE.md                 # how to work on this repo + the self-backlog convention
 ├── README.md
 ├── src/                      # serve.py, repo_check.py, index.html

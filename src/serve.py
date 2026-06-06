@@ -13,7 +13,7 @@ Serves index.html plus a small JSON API:
     POST /api/restart              re-exec the server (e.g. after a code pull)
 
 Run:   python src/serve.py   /   python3 src/serve.py
-Or the launcher in the repo root:  mission-control.cmd  (starts it detached)
+Or a launcher in the repo root:  mc-windows.cmd / mc-unix.command  (starts it detached)
 
 Flags:
     --no-open    don't open a browser (used by Restart so it reuses your tab)
@@ -462,6 +462,11 @@ def main() -> int:
     argv = sys.argv[1:]
     no_open = "--no-open" in argv
     setup_output("--detached" in argv)
+
+    problem = preflight()
+    if problem:
+        log(f"ERROR: {problem}")
+        return 1
 
     existing = probe_existing()
     if existing:

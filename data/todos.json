@@ -23,5 +23,30 @@
     "lane": "later",
     "rank": 1,
     "notes": "Afventer svar fra Jeppe og Mads. Vi mangler PAK til Monitor"
+  },
+  "launis-ai.dk": {
+    "lane": "later",
+    "rank": 2,
+    "notes": "Ordre audit og excel doc support"
+  },
+  "wallmann-ai.dk": {
+    "lane": "later",
+    "rank": 3,
+    "notes": "Kontakt Trine og sæt et møde op med ny Morten"
+  },
+  "DMR-ai.dk": {
+    "lane": "later",
+    "rank": 4,
+    "notes": "Data retention på sags ligesom på lab?"
+  },
+  "stennevad-ai.dk": {
+    "lane": "later",
+    "rank": 5,
+    "notes": "Undersøg excel issue og fix"
+  },
+  "targarno-ai.dk": {
+    "lane": "next",
+    "rank": 3,
+    "notes": "AI feedback til Joachim"
   }
 }

@@ -8,6 +8,7 @@ Serves index.html plus a small JSON API:
     GET  /api/todos                the TODO board (data/todos.json)
     POST /api/todos                replace the TODO board (body = full JSON object)
     POST /api/sync                 git add/commit/push data/todos.json
+    POST /api/backlog/archive      move finished backlog items to data/backlog-archive.json
     POST /api/shutdown             stop the server
     POST /api/restart              re-exec the server (e.g. after a code pull)
 
@@ -51,6 +52,7 @@ REGISTRY = ROOT / "data" / "projects.json"      # customer projects
 INTERNAL = ROOT / "data" / "internal.json"      # internal WeZimplify product repos
 INTERNAL_DIR = SCAN_ROOT / "wez-internal"       # subfolder the internal repos live in
 TODOS = ROOT / "data" / "todos.json"
+ARCHIVE = ROOT / "data" / "backlog-archive.json"   # retired self-backlog items
 LOGFILE = ROOT / "logs" / "server.log"
 
 HOST = "127.0.0.1"
@@ -177,6 +179,27 @@ def save_todos(data: dict) -> None:
     with open(tmp, "w", encoding="utf-8", newline="\n") as f:
         f.write(json.dumps(data, indent=2, ensure_ascii=False) + "\n")
     os.replace(tmp, TODOS)
+
+
+def archive_backlog(items: list) -> dict:
+    """Append finished self-backlog lines to data/backlog-archive.json (a committed,
+    cross-machine record) so the live backlog widget can drop them."""
+    arr = []
+    try:
+        existing = json.loads(ARCHIVE.read_text(encoding="utf-8"))
+        if isinstance(existing, list):
+            arr = existing
+    except (OSError, json.JSONDecodeError):
+        arr = []
+    ts = datetime.now().isoformat(timespec="seconds")
+    for text in items:
+        arr.append({"text": text, "archived_at": ts})
+    ARCHIVE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = ARCHIVE.with_name(ARCHIVE.name + ".tmp")
+    with open(tmp, "w", encoding="utf-8", newline="\n") as f:   # LF, like save_todos
+        f.write(json.dumps(arr, indent=2, ensure_ascii=False) + "\n")
+    os.replace(tmp, ARCHIVE)
+    return {"ok": True, "archived": len(items), "total": len(arr)}
 
 
 def run_repo_check(fetch: bool, root: Path) -> tuple[list, str, list]:
@@ -364,6 +387,17 @@ class Handler(BaseHTTPRequestHandler):
                     raise ValueError("expected a JSON object")
                 save_todos(data)
                 self._json(200, {"ok": True})
+            except (ValueError, OSError) as e:
+                self._json(400, {"ok": False, "error": str(e)})
+        elif path == "/api/backlog/archive":
+            length = int(self.headers.get("Content-Length") or 0)
+            raw = self.rfile.read(length) if length else b"{}"
+            try:
+                data = json.loads(raw.decode("utf-8"))
+                items = data.get("items") if isinstance(data, dict) else None
+                if not isinstance(items, list):
+                    raise ValueError("expected an items array")
+                self._json(200, archive_backlog([str(x) for x in items]))
             except (ValueError, OSError) as e:
                 self._json(400, {"ok": False, "error": str(e)})
         elif path == "/api/sync":

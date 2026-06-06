@@ -84,10 +84,19 @@
 
   .wrap { position: relative; z-index: 1; max-width: 1180px; margin: 0 auto; padding: 40px 32px 80px; }
 
+  /* themed scrollbars — driven by theme vars, so dark in dark mode, light in Sun */
+  * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--faint) 60%, transparent) transparent; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--faint) 55%, transparent); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--faint); }
+
   /* ---------- Masthead ---------- */
   .masthead { padding-bottom: 20px; border-bottom: 1px solid var(--line); }
   h1 { font-family: "Archivo", sans-serif; font-weight: 900; font-size: clamp(40px, 7vw, 74px); letter-spacing: -0.025em; line-height: 0.9; }
   h1 .slash { color: var(--accent); }
+  .mast-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px 28px; flex-wrap: wrap; }
+  .mast-top .tally { padding-bottom: 6px; }
 
   /* info strip under the title: 3 sections with separators, always horizontal */
   .strip { display: flex; align-items: stretch; margin-top: 16px; }
@@ -119,12 +128,14 @@
   .selfbox-head .sb-count { font-size: 11px; color: var(--faint); white-space: nowrap; }
   .selfbox-head .sb-tools { display: flex; align-items: center; gap: 6px; margin-left: auto; }
   .sb-tool { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 12px; line-height: 1; padding: 2px 3px; border-radius: 5px; }
-  .sb-tool:hover { color: var(--fg); }
+  .sb-tool:hover:not(:disabled) { color: var(--fg); }
+  .sb-tool:disabled { opacity: .3; cursor: default; }
+  .sb-tool svg { display: block; }
   .sb-tool.on { color: var(--magenta); }
   .sb-chev { color: var(--muted); font-size: 11px; transition: transform .15s; }
   .selfbox.open .sb-chev { transform: rotate(180deg); }
   /* dropdown popover: opens within the middle column, never changes strip height */
-  .selfbox-body { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--magenta) 38%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--magenta) 6%, var(--panel)); box-shadow: 0 18px 44px -18px rgba(0,0,0,0.6); }
+  .selfbox-body { display: none; position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 40; max-height: 264px; overflow-y: auto; padding: 10px 12px; border: 1px solid color-mix(in srgb, var(--magenta) 38%, var(--line)); border-radius: 10px; background: color-mix(in srgb, var(--magenta) 6%, var(--panel)); box-shadow: 0 18px 44px -18px rgba(0,0,0,0.6); }
   .selfbox.open .selfbox-body { display: block; }
   .sb-item { display: flex; align-items: flex-start; gap: 8px; font-size: 12px; line-height: 1.45; padding: 3px 0; color: var(--fg); }
   .sb-item .box { flex-shrink: 0; font-family: "IBM Plex Mono", monospace; color: var(--magenta); }
@@ -132,7 +143,7 @@
   .sb-item.done .box { color: var(--faint); }
   .sb-item.done .sb-text { text-decoration: line-through; }
   .sb-empty { font-size: 11.5px; color: var(--faint); padding: 4px 0; }
-  .sb-edit { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--fg); font-family: inherit; font-size: 12px; line-height: 1.5; padding: 8px 10px; resize: vertical; min-height: 96px; outline: none; }
+  .sb-edit { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--fg); font-family: inherit; font-size: 12px; line-height: 1.5; padding: 8px 10px; resize: vertical; height: 200px; overflow-y: auto; outline: none; }
   .sb-edit:focus { border-color: color-mix(in srgb, var(--magenta) 50%, var(--line)); }
   .sb-hint { font-size: 10.5px; color: var(--faint); margin-top: 6px; }
 
@@ -165,27 +176,25 @@
   .lane { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; display: flex; flex-direction: column; overflow: hidden; }
   .lane-head { display: flex; align-items: center; justify-content: space-between; padding: 11px 14px; border-bottom: 1px solid var(--line); border-top: 2px solid var(--lc); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--lc); }
   .lane-head .lane-count { color: var(--faint); font-size: 11px; }
-  .lane-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 80px; max-height: 360px; overflow-y: auto; transition: background .12s; }
+  .lane-body { padding: 10px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; min-height: 80px; max-height: 360px; overflow-x: hidden; overflow-y: auto; transition: background .12s; }
   .lane-body.dragover { background: color-mix(in srgb, var(--accent) 9%, transparent); }
   .lane-empty { color: var(--faint); font-size: 11.5px; text-align: center; padding: 18px 6px; border: 1px dashed var(--line); border-radius: 9px; }
 
-  .tcard { position: relative; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  /* no overflow:hidden — the edge arrows live in the lane gutter just outside the card */
+  .tcard { position: relative; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; }
   .tcard.dragging { opacity: .35; }
   .tcard.blocked { opacity: .62; }
-  /* edge hover-arrows: shift a card to the adjacent lane (appended at the bottom) */
-  .tmove { position: absolute; top: 50%; transform: translateY(-50%); height: 42px; width: 20px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--muted); cursor: pointer; opacity: 0; transition: opacity .12s, color .12s, background .12s; z-index: 3; border-radius: 7px; }
-  .tcard:hover .tmove { opacity: .85; }
+  /* edge arrows: in the lane gutter, outside the card; only the moused side shows */
+  .tmove { position: absolute; top: 50%; transform: translateY(-50%); height: 38px; width: 16px; display: flex; align-items: center; justify-content: center; background: none; border: none; color: var(--muted); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .12s, color .12s, background .12s; z-index: 3; border-radius: 6px; }
+  .tcard:hover.side-l .tmove.l, .tcard:hover.side-r .tmove.r { opacity: .85; pointer-events: auto; }
   .tmove:hover { opacity: 1; color: var(--fg); background: color-mix(in srgb, var(--accent) 16%, transparent); }
-  .tmove.l { left: 2px; } .tmove.r { right: 2px; }
+  .tmove.l { left: -17px; } .tmove.r { right: -17px; }
   .tmove svg { display: block; }
-  /* priority signal-bars (NEXT lane only) */
-  .tbars { flex-shrink: 0; display: inline-flex; align-items: center; }
-  .tbars svg { display: block; }
   /* blocked / waiting toggle + badge */
-  .tblock { background: none; border: none; color: var(--faint); cursor: pointer; padding: 0 2px; flex-shrink: 0; display: inline-flex; align-items: center; line-height: 1; }
-  .tblock:hover { color: var(--fg); }
-  .tblock.on { color: var(--watch); }
-  .tblock svg { display: block; fill: currentColor; }
+  .tblock { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 3px; flex-shrink: 0; display: inline-flex; align-items: center; line-height: 1; border-radius: 6px; transition: color .12s, background .12s; }
+  .tblock:hover { color: var(--fg); background: color-mix(in srgb, var(--watch) 16%, transparent); }
+  .tblock.on { color: var(--watch); background: color-mix(in srgb, var(--watch) 14%, transparent); }
+  .tblock svg { display: block; fill: currentColor; width: 13px; height: 13px; }
   .waitbadge { font-size: 8.5px; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 999px; padding: 2px 6px; flex-shrink: 0; color: var(--watch); border: 1px solid color-mix(in srgb, var(--watch) 45%, var(--line)); }
   .tcard-head { display: flex; align-items: center; gap: 9px; padding: 9px 11px; cursor: grab; }
   .tcard-head:active { cursor: grabbing; }
@@ -288,11 +297,11 @@
   .commits .cm .sha { color: var(--faint); }
   .commits .cm .arw { color: var(--accent); }
 
-  .tally { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 14px; }
-  .tally .cell { background: var(--panel); padding: 11px 16px; }
-  .tally .num { font-family: "Archivo", sans-serif; font-weight: 800; font-size: 24px; line-height: 1; }
-  .tally .lab { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 6px; }
-  .tally .lab::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  /* compact status tally — sits up by the title (mast-top), inline dot+number chips */
+  .tally { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .tally .tcell { display: inline-flex; align-items: center; gap: 7px; font-family: "Archivo", sans-serif; font-weight: 800; font-size: 19px; line-height: 1; color: var(--fg); }
+  .tally .tdot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 8px var(--c); flex-shrink: 0; }
+  .tally .tlab { font-family: "IBM Plex Mono", monospace; font-weight: 500; font-size: 10px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted); }
 
   .empty { text-align: center; color: var(--faint); padding: 40px 0; font-size: 13px; }
 
@@ -324,11 +333,10 @@
   .killed-sub { color: var(--muted); font-size: 13px; margin-top: 10px; line-height: 1.6; }
   .killed-sync { color: var(--faint); font-size: 11.5px; margin-top: 14px; }
 
-  @media (max-width: 600px) { .online-word { display: none; } }
+  @media (max-width: 600px) { .online-word { display: none; } .tally .tlab { display: none; } }
   @media (max-width: 820px) { .board { grid-template-columns: 1fr; } }
   @media (max-width: 720px) {
     .wrap { padding: 28px 16px 60px; }
-    .tally { grid-template-columns: repeat(2, 1fr); }
     .row { grid-template-columns: 11px 24px minmax(0,1fr) auto; gap: 12px; }
     .row .handover { display: none; }
     .detail { padding-left: 18px; }
@@ -339,7 +347,10 @@
 <div class="wrap">
 
   <header class="masthead">
-    <h1>MISSION<span class="slash">/</span>CONTROL</h1>
+    <div class="mast-top">
+      <h1>MISSION<span class="slash">/</span>CONTROL</h1>
+      <div class="tally" id="tally"></div>
+    </div>
     <div class="strip">
       <div class="sect sect-left">
         <div class="l1" id="git-email">—</div>
@@ -405,7 +416,6 @@
   <div class="scaninfo" id="scaninfo"></div>
 
   <main class="rows" id="rows"></main>
-  <div class="tally" id="tally"></div>
 </div>
 
 <div class="term-overlay" id="term">
@@ -488,23 +498,28 @@ $("theme-toggle").addEventListener("click", () => {
 /* ---------------- loading terminal ---------------- */
 const term = $("term"), termBody = $("term-body");
 let termTimer = null, termExplain = "", termSpin = null;
-const BRAILLE = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏";
+// Claude Code's loading animation: a pulsing star glyph + a rotating whimsical verb.
+const STAR = ["·", "✢", "✳", "✶", "✻", "✽"];
+const VERBS = ["Accomplishing","Actioning","Actualizing","Architecting","Baking","Beaming","Beboppin'","Befuddling","Billowing","Blanching","Bloviating","Boogieing","Boondoggling","Booping","Bootstrapping","Brewing","Bunning","Burrowing","Calculating","Canoodling","Caramelizing","Cascading","Catapulting","Cerebrating","Channeling","Choreographing","Churning","Clauding","Coalescing","Cogitating","Combobulating","Composing","Computing","Concocting","Considering","Contemplating","Cooking","Crafting","Creating","Crunching","Crystallizing","Cultivating","Deciphering","Deliberating","Determining","Dilly-dallying","Discombobulating","Doing","Doodling","Drizzling","Ebbing","Effecting","Elucidating","Embellishing","Enchanting","Envisioning","Evaporating","Fermenting","Fiddle-faddling","Finagling","Flambéing","Flibbertigibbeting","Flowing","Flummoxing","Fluttering","Forging","Forming","Frolicking","Frosting","Gallivanting","Galloping","Garnishing","Generating","Gesticulating","Germinating","Gitifying","Grooving","Gusting","Harmonizing","Hashing","Hatching","Herding","Honking","Hullaballooing","Hyperspacing","Ideating","Imagining","Improvising","Incubating","Inferring","Infusing","Ionizing","Jitterbugging","Julienning","Kneading","Leavening","Levitating","Lollygagging","Manifesting","Marinating","Meandering","Metamorphosing","Misting","Moonwalking","Moseying","Mulling","Mustering","Musing","Nebulizing","Nesting","Noodling","Nucleating","Orbiting","Orchestrating","Osmosing","Perambulating","Percolating","Perusing","Philosophising","Photosynthesizing","Pollinating","Pondering","Pontificating","Pouncing","Precipitating","Prestidigitating","Processing","Proofing","Propagating","Puttering","Puzzling","Quantumizing","Razzle-dazzling","Razzmatazzing","Recombobulating","Reticulating","Roosting","Ruminating","Sautéing","Scampering","Schlepping","Scurrying","Seasoning","Shenaniganing","Shimmying","Simmering","Skedaddling","Sketching","Slithering","Smooshing","Spelunking","Spinning","Sprouting","Stewing","Sublimating","Swirling","Swooping","Symbioting","Synthesizing","Tempering","Thinking","Thundering","Tinkering","Tomfoolering","Topsy-turvying","Transfiguring","Transmuting","Twisting","Undulating","Unfurling","Unravelling","Vibing","Waddling","Wandering","Warping","Whatchamacalliting","Whirlpooling","Whirring","Whisking","Wibbling","Working","Wrangling","Zesting","Zigzagging"];
+const pickVerb = () => VERBS[Math.floor(Math.random() * VERBS.length)];
 function termShow(headline, explain, busyLabel) {
   clearTimeout(termTimer); clearInterval(termSpin);
   termExplain = explain || "";
   term.classList.add("show");
   termBody.innerHTML = `<div class="tl run">${esc(headline)}</div>`
     + (termExplain ? `<div class="tl note">${esc(termExplain)}</div>` : "")
+    + (busyLabel ? `<div class="tl note">${esc(busyLabel)}</div>` : "")
     + `<div class="tl run" id="term-spin"></div>`;
-  // braille spinner + elapsed timer so a slow git fetch never looks frozen
-  const spinEl = $("term-spin"), t0 = performance.now(), label = busyLabel || "working";
-  let f = 0;
+  // pulsing star + a whimsical verb that rotates, so a slow git fetch never looks frozen
+  const spinEl = $("term-spin"), t0 = performance.now();
+  let f = 0, verb = pickVerb(), lastSwap = 0;
   const paint = () => {
-    const secs = ((performance.now() - t0) / 1000).toFixed(1);
-    spinEl.innerHTML = `<span class="spinner">${BRAILLE[f++ % BRAILLE.length]}</span> ${esc(label)} <span class="elapsed">${secs}s</span>`;
+    const secs = (performance.now() - t0) / 1000;
+    if (secs - lastSwap > 2.5) { verb = pickVerb(); lastSwap = secs; }
+    spinEl.innerHTML = `<span class="spinner">${STAR[f++ % STAR.length]}</span> ${esc(verb)}<span class="elapsed">… ${secs.toFixed(1)}s</span>`;
   };
   paint();
-  termSpin = setInterval(paint, 90);
+  termSpin = setInterval(paint, 120);
 }
 function termFinish(log, summary, isErr) {
   clearTimeout(termTimer); clearInterval(termSpin);
@@ -532,7 +547,7 @@ function termFinish(log, summary, isErr) {
       const tick = () => {
         const cd = document.createElement("div");
         cd.className = "tl note";
-        cd.textContent = c === 3 ? `Autoclose in ${c}..` : `${c}..`;
+        cd.textContent = `Autoclose in ${c}..`;
         termBody.appendChild(cd);
         termBody.scrollTop = termBody.scrollHeight;
         c -= 1;
@@ -747,22 +762,26 @@ function parseChecklist(notes) {
   }).filter(Boolean);
 }
 
+const ICON_PLUS = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
+const ICON_ARCHIVE = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/><path d="M12 3v10M8 9l4 4 4-4"/></svg>`;
 function renderSelfBacklog() {
   const box = $("selfbox");
   if (!box) return;
   const notes = (TODOS[SELF_NAME] || {}).notes || "";
   const items = parseChecklist(notes);
   const open = items.filter(i => !i.done).length;
+  const doneCount = items.length - open;
+  const ordered = [...items.filter(i => !i.done), ...items.filter(i => i.done)];  // done sink to bottom
   box.className = "selfbox" + (selfboxOpen ? " open" : "");
   let body;
   if (selfboxEdit) {
     body = `<textarea class="sb-edit" id="sb-edit">${esc(notes)}</textarea>`
       + `<div class="sb-hint">one item per line · <code>- [ ]</code> open · <code>- [x]</code> done · an agent ticks items off as it implements them</div>`;
-  } else if (items.length) {
-    body = items.map(i =>
+  } else if (ordered.length) {
+    body = ordered.map(i =>
       `<div class="sb-item${i.done ? " done" : ""}"><span class="box">[${i.done ? "x" : " "}]</span><span class="sb-text">${esc(i.text)}</span></div>`).join("");
   } else {
-    body = `<div class="sb-empty">no items — click ✎ to add backlog notes for mission-control</div>`;
+    body = `<div class="sb-empty">no items — click + to add a backlog item</div>`;
   }
   box.innerHTML = `
     <div class="selfbox-head" id="sb-head">
@@ -770,13 +789,15 @@ function renderSelfBacklog() {
       <span class="sb-title">mission-control · backlog</span>
       <span class="sb-count">· ${open} open</span>
       <span class="sb-tools">
+        <button class="sb-tool" id="sb-add-btn" title="Add item (top)">${ICON_PLUS}</button>
+        <button class="sb-tool" id="sb-archive-btn" title="Archive ${doneCount} checked item${doneCount === 1 ? "" : "s"}"${doneCount ? "" : " disabled"}>${ICON_ARCHIVE}</button>
         <button class="sb-tool${selfboxEdit ? " on" : ""}" id="sb-edit-btn" title="${selfboxEdit ? "Done editing" : "Edit items"}">${selfboxEdit ? "✓" : "✎"}</button>
         <span class="sb-chev">⌄</span>
       </span>
     </div>
     <div class="selfbox-body">${body}</div>`;
   $("sb-head").addEventListener("click", e => {
-    if (e.target.closest("#sb-edit-btn")) return;
+    if (e.target.closest(".sb-tool")) return;
     selfboxOpen = !selfboxOpen;
     try { localStorage.setItem("mc-selfbox", selfboxOpen ? "1" : "0"); } catch (e) {}
     renderSelfBacklog();
@@ -787,6 +808,29 @@ function renderSelfBacklog() {
     if (selfboxEdit) selfboxOpen = true;
     renderSelfBacklog();
     if (selfboxEdit) { const t = $("sb-edit"); if (t) t.focus(); }
+  });
+  $("sb-add-btn").addEventListener("click", e => {
+    e.stopPropagation();
+    if (!TODOS[SELF_NAME]) TODOS[SELF_NAME] = {};
+    const cur = TODOS[SELF_NAME].notes || "";
+    TODOS[SELF_NAME].notes = "- [ ] " + (cur ? "\n" + cur : "");   // prepend at the top
+    selfboxEdit = true; selfboxOpen = true;
+    saveTodos();
+    renderSelfBacklog();
+    const t = $("sb-edit"); if (t) { t.focus(); t.setSelectionRange(6, 6); }   // cursor after "- [ ] "
+  });
+  $("sb-archive-btn").addEventListener("click", async e => {
+    e.stopPropagation();
+    const all = parseChecklist((TODOS[SELF_NAME] || {}).notes || "");
+    const done = all.filter(i => i.done);
+    if (!done.length) return;
+    try {
+      await fetch("/api/backlog/archive", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ items: done.map(i => i.text) }) });
+    } catch (err) {}
+    if (!TODOS[SELF_NAME]) TODOS[SELF_NAME] = {};
+    TODOS[SELF_NAME].notes = all.filter(i => !i.done).map(i => "- [ ] " + i.text).join("\n");
+    saveTodos(true);
+    renderSelfBacklog();
   });
   const bodyEl = box.querySelector(".selfbox-body");
   if (bodyEl) bodyEl.addEventListener("dblclick", () => {
@@ -811,16 +855,6 @@ const CHEV_L = `<svg width="9" height="14" viewBox="0 0 9 14" fill="none" stroke
 const CHEV_R = `<svg width="9" height="14" viewBox="0 0 9 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 1 L7 7 L2.5 13"/></svg>`;
 const ICON_PAUSE = `<svg width="11" height="11" viewBox="0 0 12 12"><rect x="2" y="1.5" width="3" height="9" rx="1"/><rect x="7" y="1.5" width="3" height="9" rx="1"/></svg>`;
 const ICON_PLAY  = `<svg width="11" height="11" viewBox="0 0 12 12"><path d="M3 1.5 L10 6 L3 10.5 Z"/></svg>`;
-/* signal-bars: urgency by priority slot (NEXT lane only). slot 0 = 3 lit, 1 = 2, ≥2 = 1, ≥3 faint */
-function signalBars(i) {
-  const lit = i === 0 ? 3 : i === 1 ? 2 : 1;
-  const bar = (idx, x, y, h) =>
-    `<rect x="${x}" y="${y}" width="3" height="${h}" rx="1" fill="${idx < lit ? "var(--next)" : "var(--line)"}"/>`;
-  return `<span class="tbars" title="priority ${i + 1}"${i >= 3 ? ` style="opacity:.5"` : ""}>`
-    + `<svg width="15" height="13" viewBox="0 0 15 13" aria-hidden="true">`
-    + bar(0, 0, 8, 5) + bar(1, 6, 4, 9) + bar(2, 11, 0, 13)
-    + `</svg></span>`;
-}
 /* edge arrows move a card one lane over, appended at the destination bottom */
 function moveLane(name, dir) {
   const t = TODOS[name]; if (!t) return;
@@ -842,7 +876,6 @@ function renderBoard() {
       const notes = t.notes || "";
       const isInternal = groupOf(p) === "internal";
       const blocked = !!t.blocked;
-      const bars = (lane === "next" && !blocked) ? signalBars(i) : "";
       return `<div class="tcard${blocked ? " blocked" : ""}" data-name="${esc(n)}">
         ${lane !== "now"   ? `<button class="tmove l" data-name="${esc(n)}" data-dir="-1" title="Move toward Now">${CHEV_L}</button>` : ""}
         ${lane !== "later" ? `<button class="tmove r" data-name="${esc(n)}" data-dir="1" title="Move toward Later">${CHEV_R}</button>` : ""}
@@ -851,7 +884,6 @@ function renderBoard() {
           <span class="ttitle" title="${esc(p.title || n)}">${esc(p.title || n)}</span>
           ${blocked ? `<span class="waitbadge">waiting</span>` : ""}
           ${isInternal ? `<span class="inttag" title="Internal WeZimplify tool">internal</span>` : ""}
-          ${bars}
           <button class="tblock${blocked ? " on" : ""}" data-name="${esc(n)}" title="${blocked ? "Blocked — click to resume" : "Mark blocked / waiting"}">${blocked ? ICON_PLAY : ICON_PAUSE}</button>
           <span class="tstat" style="color:${m.c}" title="${esc(p.git ? p.git.status : "no scan")}">${m.g}</span>
           <button class="tremove" data-name="${esc(n)}" title="Remove from board">✕</button>
@@ -873,6 +905,15 @@ function wireBoard() {
     const card = h.closest(".tcard");
     h.addEventListener("dragstart", e => { DRAG = card.dataset.name; card.classList.add("dragging"); e.dataTransfer.effectAllowed = "move"; });
     h.addEventListener("dragend", () => { DRAG = null; card.classList.remove("dragging"); document.querySelectorAll(".lane-body").forEach(b => b.classList.remove("dragover")); });
+  });
+  // edge arrows: reveal only the side the cursor is on
+  document.querySelectorAll(".tcard").forEach(card => {
+    card.addEventListener("mousemove", e => {
+      const r = card.getBoundingClientRect();
+      const left = (e.clientX - r.left) < r.width / 2;
+      card.classList.toggle("side-l", left);
+      card.classList.toggle("side-r", !left);
+    });
   });
   document.querySelectorAll(".lane-body").forEach(body => {
     body.addEventListener("dragover", e => { e.preventDefault(); body.classList.add("dragover"); });
@@ -1012,7 +1053,7 @@ function renderTally() {
   DATA.filter(p => groupOf(p) === activeGroup).forEach(p => { const g = gitGroup(p); if (counts[g] !== undefined) counts[g]++; });
   const cells = [["synced", "In sync", "var(--live)"], ["push", "Push", "var(--accent)"], ["pull", "Pull", "var(--watch)"], ["attention", "Attention", "var(--down)"]];
   $("tally").innerHTML = cells.map(([k, lab, c]) =>
-    `<div class="cell"><div class="num">${counts[k]}</div><div class="lab" style="--c:${c}">${lab}</div></div>`).join("");
+    `<span class="tcell" style="--c:${c}" title="${lab}"><span class="tdot"></span>${counts[k]}<span class="tlab">${lab}</span></span>`).join("");
 }
 
 /* ---------------- events ---------------- */

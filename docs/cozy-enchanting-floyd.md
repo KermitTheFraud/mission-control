@@ -71,3 +71,41 @@ Add tasks 1–13 to `TODOS["mission-control"].notes` as `- [ ]`, flip to `- [x]`
 - Click TODO BOARD line collapses board; hint `drag n' drop · reorder priority · notes are autosaved:))`.
 - Sync message lingers +1.5s; Refresh shows spinner + elapsed + "git fetch × N".
 - Restart reuses tab. Commit + push.
+
+---
+
+# Revision 2 (review follow-up)
+
+A review of rev 1 produced these adjustments. Same working rule: stop the server, edit, restart last.
+
+### 1. Edge arrows — one side only, outside the card
+Show only the arrow on the side the cursor is on (left half → ◄, right half → ►), never both. Move them into the lane gutter just **outside** the card edge so they stop covering content: widen `.lane-body` side padding to ~18px and position `.tmove` at `left/right: -17px` (stays inside the lane's padding box, so the `overflow-y:auto` scroll area doesn't clip them). Side chosen via a `mousemove` handler toggling `.tcard.side-l/.side-r`; visibility gated on `.tcard:hover` (the arrow is a card descendant, so hovering it keeps the card "hovered"). Hidden arrows get `pointer-events:none`. NOW → only ►, LATER → only ◄.
+
+### 3. Remove priority signal-bars
+Delete the NEXT-lane signal-bars: the `.tbars` CSS, `signalBars()`, and the `bars` usage in `renderBoard`.
+
+### 4. Blocked / waiting button bigger + clearer
+Pause/resume glyph ~11→13px; `.tblock` default colour → `--muted`, rounded hover/active background tinted `--watch`, so it reads as a real toggle.
+
+### 5. Backlog popover ~10 lines (view + edit)
+Cap `.selfbox-body` to ~10 lines + scroll. The dbl-click/✎ edit textarea (`.sb-edit`) becomes a fixed ~10-line box (~200px) with its own scroll — stays 10 lines, doesn't auto-grow.
+
+### 6. Status tally → up by the title
+Move the bottom *In sync / Push / Pull / Attention* grid into a new `.mast-top` row, right of the title, as compact `dot + number` chips (`renderTally` rewritten). Labels hide under 600px so it always fits. Remove the bottom `.tally`.
+
+### 7. Terminal: full Claude Code animation set
+Replace the lone braille spinner with the signature look: a pulsing **star** glyph cycling `· ✢ ✳ ✶ ✻ ✽`, plus a **whimsical gerund verb** (full ~184-word list embedded) that rotates every ~2.5s, plus the elapsed timer and the `git fetch × N — network-bound` line.
+
+### 8. Backlog add + sort + archive (`index.html` + `serve.py`)
+- **"+" button** in the widget header → prepends a new `- [ ]` line at the top, enters edit mode, focuses with the cursor ready to type.
+- **Checked items sink to the bottom** (render-time sort: open first, done last).
+- **Archive button** → `POST /api/backlog/archive`; the server appends the `[x]` lines (each with `archived_at`) to **`data/backlog-archive.json`** (committed, syncs across machines), and the client strips them from the list. Auto-after-1-week is **deferred** (no per-item timestamps in the markdown format).
+
+### 9. Terminal autoclose — full text on every line
+Each countdown line reads the full `Autoclose in 3..`, `Autoclose in 2..`, `Autoclose in 1..` (currently only the first line has the words), still one line per second, then close.
+
+### Scrollbars — themed for dark mode
+Add themed scrollbars (`::-webkit-scrollbar*` + Firefox `scrollbar-color/width`) driven by theme vars, so the white default bars on the lanes / backlog / terminal turn dark in dark mode (and stay light-appropriate in Sun).
+
+### Verify (rev 2)
+Arrows show one-at-a-time in the gutter, never over text; no signal-bars; pause toggle bigger; backlog (both modes) caps at ~10 lines + scroll; tally sits by the title and survives a narrow window; terminal shows the star + rotating verbs; "+" adds at top, done items sink, Archive moves `[x]` into `data/backlog-archive.json`; autoclose lines all read "Autoclose in N.."; scrollbars are dark in dark mode.

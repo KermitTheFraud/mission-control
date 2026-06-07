@@ -16,13 +16,13 @@
   },
   "farmfood-ai.dk": {
     "lane": "next",
-    "rank": 5,
+    "rank": 6,
     "notes": "BC adgang mangler stadig ",
     "blocked": true
   },
   "kmrustfri": {
     "lane": "next",
-    "rank": 6,
+    "rank": 7,
     "notes": "Afventer svar fra Jeppe og Mads. Vi mangler PAK til Monitor",
     "blocked": true
   },
@@ -57,9 +57,9 @@
     "rank": 3,
     "notes": "Der er to lab mapper?"
   },
-  "wez-website": {
+  "wez-website-2": {
     "lane": "now",
-    "rank": 0,
+    "rank": 1,
     "notes": "Update new website with feedback fra Morten og Sara"
   }
 }

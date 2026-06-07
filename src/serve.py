@@ -506,11 +506,10 @@ def main() -> int:
 
 if __name__ == "__main__":
     if "--osinfo" in sys.argv:
-        # Printed by the launcher banner: "System identified as Windows 10 · 10.0.19045"
+        # Bare OS string for the launcher banner, e.g. "macOS Tahoe · 26.3.1".
+        # The launchers add their own "SYSTEM" label + styling around it.
         _os = detect_os()
-        _line = "System identified as " + _os["name"]
-        if _os.get("detail"):
-            _line += " · " + _os["detail"]
+        _line = _os["name"] + (" · " + _os["detail"] if _os.get("detail") else "")
         print(_line)
         sys.exit(0)
     sys.exit(main())

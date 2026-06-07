@@ -30,6 +30,20 @@
       "note": "Static site (index.html + assets/pages/css/js)."
     },
     {
+      "name": "wez-website-2",
+      "title": "WeZimplify Website v2 (Next.js)",
+      "lifecycle": "live",
+      "handover": "known",
+      "summary": "Marketing site rebuilt in Next.js, static-exported.",
+      "tech": ["Next.js 16", "React 19", "TypeScript", "Tailwind"],
+      "url": "",
+      "host": "Simply.com static (SFTP)",
+      "repo": "WeZimplify/wez-website-2",
+      "contact": "",
+      "creds": "",
+      "note": "Static export (output: 'export') framework twin of wez-website-3. Active on mads-branch."
+    },
+    {
       "name": "wez-docs",
       "title": "WeZimplify Docs",
       "lifecycle": "live",
